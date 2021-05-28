@@ -1,6 +1,6 @@
 import ytdl from "ytdl-core";
 import ytpl from "ytpl";
-import { Song } from "@core/type";
+import { Song } from "../core/type";
 
 export function isYTURL(url: string) {
   let regx = /^(http[s]+:\/\/)(www\.)+youtube\.[\w]{2,3}\/(watch|playlist)/;

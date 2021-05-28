@@ -1,6 +1,6 @@
 import { Message, VoiceChannel, Guild, EmbedField } from "discord.js";
 import { Music } from "../music";
-import { isYTPlaylist, getInfoYTPlaylist, getSongYT } from "@music/utils";
+import { isYTPlaylist, getInfoYTPlaylist, getSongYT } from "../music/utils";
 
 import { ServerQueue } from "../core/server-queue";
 

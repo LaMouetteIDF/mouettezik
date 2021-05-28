@@ -11,7 +11,7 @@ import {
   HelpCMD,
   ListCMD,
   CleanCMD,
-} from "@commands";
+} from "../commands";
 import { ServerQueue } from "./server-queue";
 import { Command, CommandRequest } from "./type";
 
@@ -104,3 +104,5 @@ export class MusicBot {
     this.client.login(token);
   }
 }
+
+export default MusicBot;
