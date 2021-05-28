@@ -10,7 +10,23 @@ import {
   userIsInVoiceChannel,
   getGuild,
   getGuildID,
+  getTextChannel,
+  getPLayARGS,
 } from "./utils";
+import { Command } from "../core/type";
+import MusicBot, { Queue } from "../core";
+
+const ErrorString = {
+  Add: "**Erreur:** Une erreur s'est produite lors de l'ajout, veuillez essayer la commande (!kill) avant de contacter l'administrateur",
+  Play: "**Erreur:** Une erreur c'est produite lors de la lecture",
+};
+
+const getStringSendMSG = {
+  AddPlaylistInQueue: (title: string) =>
+    `La playlist **${title}** à été ajouter à la file d'attente!`,
+  AddMusicInQueue: (title: string) =>
+    `La musique **${title}** à été ajouter à la file d'attente!`,
+};
 
 export function HelpCMD(message: Message, serverQueue: ServerQueue) {
   message.channel.send({
@@ -21,7 +37,7 @@ export function HelpCMD(message: Message, serverQueue: ServerQueue) {
         {
           name: "Commandes :",
           value:
-            "!play [Play Options] [URL-YOUTUBE]\n!pause\n!next\n!prev\n!vol [number]\n!repeat [Repeat Options]!kill\n!help\n!list\n!clean",
+            "!clean\n!help\n!kill\n!list\n!next\n!pause\n!play [Play Options] [URL-YOUTUBE]\n!prev\n!vol [number]\n!repeat [Repeat Options]\n",
         },
         {
           name: "Play Options :",
@@ -36,7 +52,12 @@ export function HelpCMD(message: Message, serverQueue: ServerQueue) {
   });
 }
 
-export async function PlayCMD(message: Message, serverQueue: ServerQueue) {
+export async function PlayCMD(
+  this: Command,
+  message: Message,
+  serverQueue: ServerQueue
+) {
+  this.startWith;
   // verification de l'access à un salon
   if (!userIsInVoiceChannel(message))
     return message.channel.send(
@@ -55,75 +76,92 @@ export async function PlayCMD(message: Message, serverQueue: ServerQueue) {
   const guild = getGuild(message);
   if (!guild) return;
 
+  const Args = getPLayARGS(message.content);
+  // if (!Args) {
+  //   message.channel.send("Argumant invalide")
+  //   return HelpCMD(message, serverQueue)
+  // }
+
+  if (!serverQueue.music)
+    serverQueue.music = new Music(voiceChannel, getTextChannel(message));
+
   const args = message.content.split(" ");
   let url = args[args.length - 1];
   if (args.length <= 1) url = "";
 
-  if (!serverQueue.music) {
-    if (url) {
-      serverQueue.music = new Music(message);
-      await serverQueue.music.add(url);
-      if (isYTPlaylist(url))
-        message.channel.send(`Playlist: **${await getInfoYTPlaylist(url)}**`);
-      serverQueue.music.play();
-    } else {
-      return message.channel.send(
-        "Tu fais quoi gros ta crue c'étais la fête !!"
-      );
-    }
-    try {
-      serverQueue.music.connection = await voiceChannel.join();
-      serverQueue.music.play();
-    } catch (err) {
-      console.log(err);
-      //Queue.delete(guildID);
-      return message.channel.send("Je suis fatiguer là fait pas chier !!");
-    }
-  } else {
-    // --------------------------------------------------
-    if (serverQueue.music?.isPlaying && !serverQueue.music?.isStoping) {
-      if (serverQueue.music?.connection?.status == 4)
-        serverQueue.music?.connection.channel.join();
-      if (url) {
-        serverQueue.music?.add(url);
-        if (isYTPlaylist(url)) {
+  let target = args[args.length - 1];
+  if (args.length <= 1) target = "";
+
+  const music = serverQueue.music;
+  if (!music) return;
+
+  if (music.isPlaying) {
+    if (Args.url) {
+      if (!(await serverQueue.music.add(url))) {
+        return message.channel.send(ErrorString.Add);
+      }
+      if (isYTPlaylist(url)) {
+        return message.channel.send(
+          getStringSendMSG.AddPlaylistInQueue(await getInfoYTPlaylist(url))
+        );
+      } else {
+        return message.channel.send(
+          getStringSendMSG.AddMusicInQueue((await getSongYT(url)).title)
+        );
+      }
+    } else if (Args.track != -1) {
+      if (music.playlist.songs[Args.track]) {
+        if (!(await music.play(Args.track))) {
           return message.channel.send(
-            `La playlist **${await getInfoYTPlaylist(
-              url
-            )}** à été ajouter à la file d'attente!`
-          );
-        } else {
-          return message.channel.send(
-            `La musique **${
-              (await getSongYT(url)).title
-            }** à été ajouter à la file d'attente!`
+            "**Erreur:** Impossible de lire la piste"
           );
         }
+        if (Args.volume != -1) music.volume = Args.volume;
+        if (Args.repeat == "ALL") {
+          music.repeat.state = true;
+          music.repeat.value == "ALL";
+        } else if (Args.repeat == "ONE") {
+          music.repeat.state = true;
+          music.repeat.value == "ONE";
+        }
+        return;
       } else {
-        message.channel.send("De la musique est deja en cours lecture");
+        return message.channel.send(
+          "**Erreur:** Track non present dans la playlist"
+        );
       }
     } else {
-      if (serverQueue.music?.isPaused) {
-        serverQueue.music?.resume();
-      } else {
-        if (url) {
-          const songs = await getSongYT(url);
-          let track = serverQueue.music?.playlist.songs.length;
-          serverQueue.music?.add(url);
-          serverQueue.music?.play(track);
-          if (isYTPlaylist(url)) {
-            return message.channel.send(
-              `La playlist **${await getInfoYTPlaylist(
-                url
-              )}** à été ajouter à la file d'attente.`
-            );
-          }
-        } else {
-          serverQueue.music?.play();
-        }
-      }
+      return message.channel.send("De la musique est deja en cours lecture");
     }
   }
+
+  if (music.isPaused) return music.resume();
+
+  if (Args.url) {
+    let track = music.playlist.songs.length;
+    if (!(await music.add(Args.url)))
+      return message.channel.send(ErrorString.Add);
+    console.log(Args.volume);
+
+    if (Args.volume != -1) music.volume = Args.volume;
+    if (Args.repeat == "ALL") {
+      music.repeat.state = true;
+      music.repeat.value == "ALL";
+    } else if (Args.repeat == "ONE") {
+      music.repeat.state = true;
+      music.repeat.value == "ONE";
+    }
+    if (!(await music.play(track)))
+      return message.channel.send(ErrorString.Play);
+    return;
+  }
+
+  if (music.playlist.songs.length > 0) {
+    if (!(await music.play())) return message.channel.send(ErrorString.Play);
+    return;
+  }
+
+  return message.channel.send("Ta cru c'étais la fête ou quoi parle mieux!");
 }
 
 export async function PauseCMD(message: Message, serverQueue: ServerQueue) {
@@ -162,7 +200,12 @@ export async function PrevCMD(message: Message, serverQueue: ServerQueue) {
 }
 
 export function KillCMD(message: Message, serverQueue: ServerQueue) {
-  return message.channel.send("ça arrive bientôt");
+  if (!serverQueue.music) {
+    return message.channel.send("Aucune lecture n'est en cours");
+  }
+  serverQueue.music.kill();
+
+  return message.channel.send("Je reviendrai !!");
   //return message.channel.send("Je bouge pas y a quoi ?!!");
 }
 

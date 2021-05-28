@@ -1,4 +1,9 @@
 import { Message, VoiceChannel, Guild } from "discord.js";
+import { isYTURL } from "../music/utils";
+
+export function getTextChannel(message: Message) {
+  return message.channel;
+}
 
 export function getVoicechannel(message: Message): VoiceChannel | null {
   const v = message.member?.voice.channel;
@@ -44,4 +49,41 @@ export function getGuild(message: Message): Guild | null {
     return null;
   }
   return guild;
+}
+
+export function getPLayARGS(arg: string) {
+  const argsT = arg.split(" ");
+
+  const Args = {
+    url: "",
+    track: -1,
+    repeat: "",
+    volume: -1,
+  };
+
+  const rgxReapeat = / (repeat) ?(one|all)? /;
+  const argRepeat = arg.match(rgxReapeat);
+  if (argRepeat) {
+    if (argRepeat[2] == "one") Args.repeat = "ONE";
+    else Args.repeat = "ALL";
+  }
+
+  const rgxVolume = / vol ([0-9]+\.?[0-9]*)/;
+  const argVolume = arg.match(rgxVolume);
+  console.log(argVolume);
+
+  if (argVolume) {
+    const vol = parseFloat(argVolume[1]);
+    if (!isNaN(vol)) Args.volume = vol;
+  }
+
+  const lastArg = argsT[argsT.length - 1];
+
+  if (isYTURL(lastArg)) Args.url = lastArg;
+  else {
+    const track = parseInt(lastArg, 10);
+    if (!isNaN(track)) Args.track = track;
+  }
+
+  return Args;
 }

@@ -1,13 +1,13 @@
 import { Message } from "discord.js";
 import { ServerQueue } from "./server-queue";
-export interface CommandRequest {
-  cmd: string;
+export interface Command {
+  startWith: string;
   func: (message: Message, serverQueue: ServerQueue) => void;
 }
 
-export interface Command {
+export interface CMDQueue {
   condition: (message: Message) => boolean;
-  exec: (message: Message, serverQueue: ServerQueue) => void;
+  cmd: Command;
 }
 
 export type Song = {

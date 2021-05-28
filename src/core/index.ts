@@ -13,15 +13,17 @@ import {
   CleanCMD,
 } from "../commands";
 import { ServerQueue } from "./server-queue";
-import { Command, CommandRequest } from "./type";
+import { Command, CMDQueue } from "./type";
+
+export const Queue = new Map<string, ServerQueue>();
 
 export class MusicBot {
-  client: Client;
+  private client: Client;
 
-  private commandList: Array<Command> = [];
+  private queue = Queue;
+
   private prefix = "!";
-
-  private queue = new Map<string, ServerQueue>();
+  private commandList: Array<CMDQueue> = [];
 
   constructor() {
     this.client = new Client();
@@ -62,7 +64,7 @@ export class MusicBot {
               "je suis au chiote là me fait pas chier !!"
             );
           isOK = true;
-          item.exec(message, serverQueue);
+          item.cmd.func(message, serverQueue);
         }
       });
 
@@ -75,28 +77,28 @@ export class MusicBot {
     this.prefix = prefix;
   }
 
-  addCommand(commandReq: CommandRequest) {
-    const command: Command = {
+  addCommand(cmd: Command) {
+    const command: CMDQueue = {
       condition: (message: Message) =>
-        message.content.startsWith(`${this.prefix}${commandReq.cmd}`),
-      exec: commandReq.func,
+        message.content.split(" ")[0] === `${this.prefix}${cmd.startWith}`,
+      cmd,
     };
     this.commandList.push(command);
   }
 
-  getDefaultCommands(): Array<CommandRequest> {
+  getDefaultCommands(): Array<Command> {
     return [
-      { cmd: "help", func: HelpCMD },
-      { cmd: "play", func: PlayCMD },
-      { cmd: "pause", func: PauseCMD },
-      { cmd: "stop", func: StopCMD },
-      { cmd: "next", func: NextCMD },
-      { cmd: "prev", func: PrevCMD },
-      { cmd: "kill", func: KillCMD },
-      { cmd: "vol", func: VolumeCMD },
-      { cmd: "repeat", func: RepeatCMD },
-      { cmd: "list", func: ListCMD },
-      { cmd: "clean", func: CleanCMD },
+      { startWith: "help", func: HelpCMD },
+      { startWith: "play", func: PlayCMD },
+      { startWith: "pause", func: PauseCMD },
+      { startWith: "stop", func: StopCMD },
+      { startWith: "next", func: NextCMD },
+      { startWith: "prev", func: PrevCMD },
+      { startWith: "kill", func: KillCMD },
+      { startWith: "vol", func: VolumeCMD },
+      { startWith: "repeat", func: RepeatCMD },
+      { startWith: "list", func: ListCMD },
+      { startWith: "clean", func: CleanCMD },
     ];
   }
 
