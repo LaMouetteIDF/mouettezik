@@ -79,7 +79,6 @@ export class Music {
 
   play(track = 0) {
     let song = this.playlist.songs[track];
-    console.log(song);
 
     if (!song) {
       this._playing = false;
