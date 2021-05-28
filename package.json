@@ -1,5 +1,5 @@
 {
-  "name": "music-bot-test",
+  "name": "moutzik",
   "version": "1.0.0",
   "description": "",
   "main": "dist/src/app.js",
@@ -9,14 +9,14 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/LaMouetteIDF/music-bot-test.git"
+    "url": "git+https://github.com/LaMouetteIDF/moutzik.git"
   },
   "author": "",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/LaMouetteIDF/music-bot-test/issues"
+    "url": "https://github.com/LaMouetteIDF/moutzik/issues"
   },
-  "homepage": "https://github.com/LaMouetteIDF/music-bot-test#readme",
+  "homepage": "https://github.com/LaMouetteIDF/moutzik#readme",
   "dependencies": {
     "@discordjs/opus": "^0.5.0",
     "discord.js": "^12.5.3",
