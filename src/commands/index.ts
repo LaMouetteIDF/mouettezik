@@ -41,7 +41,7 @@ export function HelpCMD(message: Message, serverQueue: ServerQueue) {
         },
         {
           name: "Play Options :",
-          value: "repeat, vol <0-15>",
+          value: "repeat, vol <0-100>",
         },
         {
           name: "Repeat Options :",
@@ -221,8 +221,8 @@ export function VolumeCMD(message: Message, serverQueue: ServerQueue) {
     );
   }
   let volume = parseFloat(args[1]);
-  if (isNaN(volume) || volume < 0 || volume > 15) {
-    return message.channel.send("Commande incorrect (ex: !vol <0-15>)");
+  if (isNaN(volume) || volume < 0 || volume > 100) {
+    return message.channel.send("Commande incorrect (ex: !vol <0-100>)");
   }
   if (serverQueue.music) serverQueue.music.volume = volume;
 }
