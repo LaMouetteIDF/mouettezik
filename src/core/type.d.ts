@@ -1,5 +1,5 @@
-import { Message } from "discord.js";
-import { ServerQueue } from "./server-queue";
+import { Message } from 'discord.js';
+import { ServerQueue } from './server-queue';
 export interface Command {
   startWith: string;
   func: (message: Message, serverQueue: ServerQueue) => void;

@@ -1,6 +1,6 @@
-import ytdl from "ytdl-core";
-import ytpl from "ytpl";
-import { Song } from "../core/type";
+import * as ytdl from 'ytdl-core';
+import * as ytpl from 'ytpl';
+import { Song } from '../core/type';
 
 export function isYTURL(url: string) {
   let regx = /^(http[s]+:\/\/)(www\.)+youtube\.[\w]{2,3}\/(watch|playlist)/;
@@ -15,7 +15,7 @@ export function isYTPlaylist(url: string) {
 export async function getSongsInYTPlaylist(url: string) {
   let songs: Array<Song> = [];
   let u = new URL(url);
-  let PlaylistID = u.searchParams.get("list");
+  let PlaylistID = u.searchParams.get('list');
   if (!PlaylistID) return songs;
   const playlist = await ytpl(PlaylistID);
   playlist.items.forEach((item) => {
@@ -38,8 +38,8 @@ export async function getSongYT(url: string) {
 
 export async function getInfoYTPlaylist(url: string) {
   let u = new URL(url);
-  let playlistID = u.searchParams.get("list");
-  if (!playlistID) return "";
+  let playlistID = u.searchParams.get('list');
+  if (!playlistID) return '';
   const playlist = await ytpl(playlistID);
   return playlist.title;
 }

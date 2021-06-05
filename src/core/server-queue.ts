@@ -4,8 +4,10 @@ import Discord, {
   DMChannel,
   NewsChannel,
   VoiceChannel,
-} from "discord.js";
-import { Music } from "../music";
+} from 'discord.js';
+import { Music } from '../music';
+
+export const Queue = new Map<string, ServerQueue>();
 
 export class ServerQueue {
   textChannel: TextChannel | DMChannel | NewsChannel;

@@ -6,15 +6,15 @@ import Discord, {
   VoiceChannel,
   VoiceConnection,
   StreamDispatcher,
-} from "discord.js";
+} from 'discord.js';
 import {
   getSongsInYTPlaylist,
   getSongYT,
   isYTPlaylist,
   isYTURL,
-} from "./utils";
+} from './utils';
 
-import ytdl from "ytdl-core";
+import * as ytdl from 'ytdl-core';
 
 type Song = {
   title: string;
@@ -33,7 +33,7 @@ export class Music {
 
   repeat = {
     state: false,
-    value: "ALL" as "ONE" | "ALL",
+    value: 'ALL' as 'ONE' | 'ALL',
   };
 
   playlist = {
@@ -72,7 +72,7 @@ export class Music {
 
   constructor(
     voiceChannel: VoiceChannel,
-    textChannel: TextChannel | DMChannel | NewsChannel
+    textChannel: TextChannel | DMChannel | NewsChannel,
   ) {
     this.voiceChannel = voiceChannel;
     this.textChannel = textChannel;
@@ -109,21 +109,21 @@ export class Music {
     this.playlist.track = track;
 
     this.dispatcher = this.connection.play(ytdl(song.url));
-    this.dispatcher.on("start", () => {
+    this.dispatcher.on('start', () => {
       this._playing = true;
       this._stoping = false;
     });
 
-    this.dispatcher.on("finish", () => {
+    this.dispatcher.on('finish', () => {
       if (this._playing) {
-        if (this.repeat.state && this.repeat.value == "ONE")
+        if (this.repeat.state && this.repeat.value == 'ONE')
           return this.play(this.playlist.track);
 
         this.playlist.track++;
 
         if (
           this.repeat.state &&
-          this.repeat.value == "ALL" &&
+          this.repeat.value == 'ALL' &&
           !this.playlist.songs[this.playlist.track]
         )
           this.playlist.track = 0;
@@ -132,10 +132,10 @@ export class Music {
       }
     });
 
-    this.dispatcher.on("error", (error) => {
+    this.dispatcher.on('error', (error) => {
       console.error(error);
       this.textChannel.send(
-        "**Erreur:** Une erreur c'est produite lors de la lecture"
+        "**Erreur:** Une erreur c'est produite lors de la lecture",
       );
       this.stop();
     });
@@ -149,7 +149,7 @@ export class Music {
       this.dispatcher.pause();
       this._playing = false;
       this._stoping = false;
-      this.textChannel.send("Mise en pause de la lecture");
+      this.textChannel.send('Mise en pause de la lecture');
     }
   }
 
@@ -158,7 +158,7 @@ export class Music {
       this.dispatcher.resume();
       this._playing = true;
       this._stoping = false;
-      this.textChannel.send("Reprise le la lecture");
+      this.textChannel.send('Reprise le la lecture');
     }
   }
 
