@@ -31,7 +31,6 @@
     "ffmpeg": "0.0.4",
     "ffmpeg-static": "^4.3.0",
     "libsodium-wrappers": "^0.7.9",
-    "node-opus": "^0.3.3",
     "opusscript": "0.0.8",
     "reflect-metadata": "^0.1.13",
     "rimraf": "^3.0.2",

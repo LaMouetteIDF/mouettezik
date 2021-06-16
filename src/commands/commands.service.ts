@@ -1,12 +1,14 @@
 import { Injectable } from '@nestjs/common';
 import { CommandoClient, CommandoRegistry } from 'discord.js-commando';
 
+import { ClientProvider } from '@/providers/client';
+
 import { Play } from './music/play';
 import { Pause } from './music/pause';
 import { Next } from './music/next';
 import { Stop } from './music/stop';
 import { Kill } from './music/kill';
-import { ClientProvider } from '@/providers/client';
+import { Youtube } from './music/youtube';
 
 export const MusicCommands = [Play, Pause, Next, Stop, Kill];
 
@@ -16,8 +18,17 @@ export class CommandsService {
 
   register(client: CommandoClient) {
     client.registry
-      .registerDefaults()
+      .registerDefaultTypes()
+      .registerDefaultGroups()
+      .registerDefaultCommands({
+        help: false,
+        prefix: false,
+        ping: false,
+        eval: false,
+        unknownCommand: false,
+        commandState: false,
+      })
       .registerGroups([['music', 'Musique']])
-      .registerCommands([Play, Stop]);
+      .registerCommands([Play, Stop, Youtube]);
   }
 }

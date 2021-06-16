@@ -9,7 +9,8 @@ import {
 } from 'discord.js-commando';
 
 type Args = {
-  ytURL: string;
+  subCommand: string;
+  target: string;
 };
 
 export class Play extends Command {
@@ -25,17 +26,28 @@ export class Play extends Command {
       clientPermissions: ['CONNECT', 'SPEAK'],
       args: [
         {
-          key: 'ytURL',
-          prompt: 'Youtube URL',
+          key: 'subCommand',
+          prompt: 'Sub-command',
           type: 'string',
+          default: '',
+        },
+        {
+          key: 'target',
+          prompt: 'Target',
+          type: 'string',
+          default: '',
         },
       ],
     });
 
-    this._initListeners();
+    try {
+      this._initListeners();
+    } catch (e) {
+      console.log('Failed to initialize PlayCommand listeners', e);
+    }
   }
 
-  public async run(
+  async run(
     message: CommandoMessage,
     args: Args,
     _fromPattern: boolean,
@@ -44,38 +56,25 @@ export class Play extends Command {
     const youtube = this.client.youtube;
     const music = this.client.music;
 
-    //console.log(await youtube.getInfo(args.ytURL));
-
-    const voiceChannel = message.member?.voice?.channel;
-    if (!voiceChannel) return message.reply('join voice channel please!');
-
-    console.log(message.guild.me?.voice.connection);
-
-    // if (!message.guild.me?.voice && message.channel instanceof TextChannel)
-    //   music.joinChannel(message.guild, message.channel, voiceChannel);
-
-    if (
-      !message.guild.me?.voice.connection &&
-      message.channel instanceof TextChannel
-    )
-      await music.joinChannel(message.guild, message.channel, voiceChannel);
-
-    console.log(message.guild.me?.voice.connection);
+    try {
+      if (args.subCommand == 'yt') {
+        if (!args.target)
+          return message.reply(
+            'Error: Please use this synthax `!play yt <YOUTUBE-URL>`',
+          );
+      }
+    } catch (e) {
+      throw e;
+    }
 
     // try {
-    //   const connection = await voiceChannel.join();
-    //   const dispatch = connection.play(
-    //     await youtube.getAudioStream(args.ytURL),
-    //   );
-    //   dispatch.setVolume(50 / 100);
-
-    //   console.log();
-
-    //   return message.reply('OK');
+    //   if (message.channel instanceof TextChannel)
+    //     music.play(message.guild, message.channel);
     // } catch (e) {
-    //   message.reply('Sorry i have a problem!');
     //   console.log(e);
-    //   throw e;
+    //   return message.say(
+    //     'Something went horribly wrong! Please try again later.',
+    //   );
     // }
   }
 

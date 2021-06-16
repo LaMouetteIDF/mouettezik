@@ -14,29 +14,21 @@ export class CollectionQueue extends Map<string, PlayerQueue> {
 }
 
 export class CollectionState extends Map<string, PlayerState> {
-  new(
-    guildID: string,
-    textChannel: TextChannel,
-    logsChannel: TextChannel = null,
-  ) {
+  new(guildID: string, textChannel: TextChannel, logsChannel?: TextChannel) {
     console.log('toto');
 
     const queue: PlayerState = {
-      textChannelID: textChannel.id,
       textChannel,
-      logsChannel: logsChannel,
-      logsChannelID: logsChannel?.id ?? null,
-      voiceChannelID: null,
-      voiceConnection: null,
+      logsChannel: logsChannel ?? textChannel,
       volume: 0,
-      currentPlayingTime: 0,
+      curPosPlayingTime: 0,
       playing: false,
     };
     (queue.timer = (function () {
       let timer: any;
       function newTimer(this: PlayerState) {
         timer = setInterval(() => {
-          this.currentPlayingTime++;
+          this.curPosPlayingTime++;
         }, 1000);
       }
       function clearTimer(this: PlayerState) {

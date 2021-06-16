@@ -1,5 +1,5 @@
 import { TextChannel, VoiceChannel, VoiceConnection } from 'discord.js';
-import { CommandoGuild } from 'discord.js-commando';
+import { CommandoGuild, SQLiteProvider } from 'discord.js-commando';
 
 interface PlayerEvents {
   play: [text: string, guild: CommandoGuild, channel: TextChannel];
@@ -7,14 +7,38 @@ interface PlayerEvents {
 }
 
 export interface PlayerState {
-  textChannelID: string;
+  /**
+   * if textChannelID has been defined lock textChannel
+   */
+  textChannelID?: string;
+
+  /**
+   * if logsChannelID has been defined lock logsChannel
+   */
+  logsChannelID?: string;
+
+  /**
+   * if voiceChannelID has been defined lock voiceChannel
+   */
+  voiceChannelID?: string;
+
   textChannel: TextChannel;
-  logsChannelID: string | null;
-  logsChannel: TextChannel | null;
-  voiceChannelID: string;
-  voiceConnection: VoiceConnection | null;
-  volume: number; // volume 0 - 100
-  currentPlayingTime: number; // current song timer
+  logsChannel: TextChannel;
+  voiceConnection?: VoiceConnection;
+
+  /**
+   * the volume value must be between 0 and 100
+   */
+  volume: number;
+
+  /**
+   * current music playing time position
+   */
+  curPosPlayingTime: number;
+
+  /**
+   * Playing is the current playing state
+   */
   playing: boolean;
   timer?: { newTimer: () => void; clearTimer: () => void };
 }
