@@ -6,6 +6,11 @@ import {
   CommandoMessage,
 } from 'discord.js-commando';
 
+type Args = {
+  subCommand: string;
+  target: string;
+};
+
 export class Youtube extends Command {
   private _initListeners: any;
   constructor(client: CommandoClient) {
@@ -15,60 +20,31 @@ export class Youtube extends Command {
       group: 'music',
       memberName: 'youtube',
       description: 'Youtube player',
-      examples: ['yt <YOUTUBE-URL>'],
+      examples: ['yt play <YOUTUBE-URL>', 'yt add <YOUTUBE-URL>'],
       guildOnly: true,
       clientPermissions: ['CONNECT', 'SPEAK'],
-      argsType: 'single',
+      args: [
+        {
+          key: 'subCommand',
+          prompt: 'Sub-command',
+          type: 'string',
+          default: '',
+        },
+        {
+          key: 'target',
+          prompt: 'Target',
+          type: 'string',
+          default: '',
+        },
+      ],
     });
   }
   public async run(
     message: CommandoMessage,
-    args: string | object | string[],
+    args: Args,
     fromPattern: boolean,
     result?: ArgumentCollectorResult<object>,
   ): Promise<Message | Message[]> {
-    const messages = [];
-
-    try {
-      let msg = message.say(
-        `t'es sur que tu veux faire ça ??  Y (yes) / N (no):`,
-      );
-      messages.push(msg);
-      message.channel
-        .awaitMessages(
-          (res) => {
-            // console.log(res);
-            return res.content === 'y' || res.content === 'n';
-          },
-          {
-            max: 1,
-            time: 30000,
-            errors: ['time'],
-          },
-        )
-        .then((collected) => {
-          // console.log(collected);
-
-          message.channel.send('The collected message was:' + collected);
-        })
-        .catch(() => {
-          message.channel.send('There was no content collected.');
-        });
-
-      // if (message.channel.type !== 'dm')
-      //   messages.push(
-      //     message.reply('I have sent you a DM with further instructions.'),
-      //   );
-    } catch (err) {
-      console.log(err);
-
-      messages.push(
-        message.reply(
-          'Unable to send you a DM, you most likely have them disabled.',
-        ),
-      );
-    }
-    // return;
-    return messages;
+    return;
   }
 }
