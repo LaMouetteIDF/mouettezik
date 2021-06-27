@@ -15,8 +15,6 @@ export class CollectionQueue extends Map<string, PlayerQueue> {
 
 export class CollectionState extends Map<string, PlayerState> {
   new(guildID: string, textChannel: TextChannel, logsChannel?: TextChannel) {
-    console.log('toto');
-
     const queue: PlayerState = {
       textChannel,
       logsChannel: logsChannel ?? textChannel,

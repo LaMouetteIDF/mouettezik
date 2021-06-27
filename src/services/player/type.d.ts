@@ -1,8 +1,16 @@
-import { TextChannel, VoiceChannel, VoiceConnection } from 'discord.js';
+import {
+  StreamDispatcher,
+  TextChannel,
+  VoiceChannel,
+  VoiceConnection,
+} from 'discord.js';
 import { CommandoGuild, SQLiteProvider } from 'discord.js-commando';
+import { FfmpegCommand } from 'fluent-ffmpeg';
 
 interface PlayerEvents {
   play: [text: string, guild: CommandoGuild, channel: TextChannel];
+  pause: [text: string, guild: CommandoGuild, channel: TextChannel];
+  config: [text: string, guild: CommandoGuild, channel: TextChannel];
   // play: [string, CommandoGuild, TextChannel];
 }
 
@@ -25,6 +33,8 @@ export interface PlayerState {
   textChannel: TextChannel;
   logsChannel: TextChannel;
   voiceConnection?: VoiceConnection;
+  ffmpeg?: FfmpegCommand;
+  dispatch?: StreamDispatcher;
 
   /**
    * the volume value must be between 0 and 100
@@ -53,5 +63,6 @@ export type Tracks = Array<Track>;
 export interface Track {
   title: string;
   url: string;
+  startTime: number;
   thumbnail: string;
 }

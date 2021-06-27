@@ -30,7 +30,7 @@ export class Youtube {
 
   parseURL(url: string): ParseResult | null {
     const regExp =
-      /^https?\:\/\/(?:www\.youtube\.com\/|m\.youtube\.com\/|music\.youtube\.com\/|youtube\.com\/)?(?:\?vi?=|youtu\.be\/|vi?\/|user\/.+\/u\/\w{1,2}\/|embed\/|playlist\?(?:.\&)?list=|watch\?(?:.*\&)?vi?=|\&vi?=|\?(?:.*\&)?vi?=)([^#\&\?\n\/<>"']*)(?:\?t=)?(\d+)?/i;
+      /^https?\:\/\/(?:www\.youtube\.com\/|m\.youtube\.com\/|music\.youtube\.com\/|youtube\.com\/)?(?:\?vi?=|youtu\.be\/|vi?\/|user\/.+\/u\/\w{1,2}\/|embed\/|playlist\?(?:.\&)?list=|watch\?(?:.*\&)?vi?=|\&vi?=|\?(?:.*\&)?vi?=)([^#\&\?\n\/<>"']*)(?:\?list=(?:[^#\&\?\n\/<>"']*)?)?(?:[\?\&]t=)?(\d+)?$/i;
 
     const match = url.match(regExp);
 
@@ -72,11 +72,27 @@ export class Youtube {
         tracks.push({
           title: item.title,
           url: item.url,
+          startTime: p.t,
           thumbnail,
         });
       });
     } else if (this.validateID(p.id)) {
-      let info = await getInfo(p.id);
+      let item = await getInfo(p.id);
+      let thumbnail = '';
+      item.videoDetails.thumbnail;
+      if (item.videoDetails.thumbnails.length > 0) {
+        const thumbnails = item.videoDetails.thumbnails.filter(
+          (t) => t.height == 336 && t.width == 188,
+        );
+        if (thumbnails.length == 0)
+          thumbnail = item.videoDetails.thumbnails[0].url;
+      }
+      tracks.push({
+        title: item.videoDetails.title,
+        url: item.videoDetails.video_url,
+        startTime: p.t,
+        thumbnail,
+      });
     } else
       throw new Error(
         `This is not youtube valid playlist or watch ID "${p.id}"`,
@@ -94,17 +110,26 @@ export class Youtube {
   // }
 
   async getAudioStream(url: string) {
-    const info = await getInfo(url);
+    try {
+      const info = await getInfo(url);
+      // const urlParse = this.parseURL(url);
+      // console.log(urlParse);
 
-    let audioFormats = filterFormats(info.formats, 'audioonly');
-    if (audioFormats.length <= 0)
-      throw new Error('This video have not audio format.');
-    let formats = audioFormats.filter(
-      (item) =>
-        item.audioCodec == 'opus' && item.audioQuality.includes('MEDIUM'),
-    );
-    if (formats.length == 0)
-      formats = audioFormats.filter((item) => item.audioCodec == 'opus');
-    return downloadFromInfo(info, { format: formats[0] ?? audioFormats[0] });
+      let audioFormats = filterFormats(info.formats, 'audioonly');
+      if (audioFormats.length <= 0)
+        throw new Error('This video have not audio format.');
+      let formats = audioFormats.filter(
+        (item) =>
+          item.audioCodec == 'opus' && item.audioQuality.includes('MEDIUM'),
+      );
+      if (formats.length == 0)
+        formats = audioFormats.filter((item) => item.audioCodec == 'opus');
+      return downloadFromInfo(info, {
+        format: formats[0] ?? audioFormats[0],
+      });
+    } catch (e) {
+      console.log(e);
+      throw e;
+    }
   }
 }

@@ -9,6 +9,7 @@ import { Next } from './music/next';
 import { Stop } from './music/stop';
 import { Kill } from './music/kill';
 import { Youtube } from './music/youtube';
+import { Config } from './system/config';
 
 export const MusicCommands = [Play, Pause, Next, Stop, Kill];
 
@@ -28,7 +29,10 @@ export class CommandsService {
         unknownCommand: false,
         commandState: false,
       })
-      .registerGroups([['music', 'Musique']])
-      .registerCommands([Play, Stop, Youtube]);
+      .registerGroups([
+        ['music', 'Musique'],
+        ['sys', 'System'],
+      ])
+      .registerCommands([Play, Pause, Stop, Youtube, Config]);
   }
 }

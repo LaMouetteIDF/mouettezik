@@ -23,7 +23,7 @@ export class Play extends Command {
       description: 'Plays loaded queue',
       examples: ['play', 'play <YOUTUBE-URL>'],
       guildOnly: true,
-      clientPermissions: ['CONNECT', 'SPEAK'],
+      // clientPermissions: ['CONNECT', 'SPEAK'],
       args: [
         {
           key: 'subCommand',
@@ -62,6 +62,35 @@ export class Play extends Command {
           return message.reply(
             'Error: Please use this synthax `!play yt <YOUTUBE-URL>`',
           );
+        if (!youtube.validateURL(args.target))
+          return message.reply(
+            'Error: Please use this synthax `!play yt <YOUTUBE-URL>`',
+          );
+        console.log(args.target);
+
+        if (message.channel instanceof TextChannel) {
+          await music.joinChannel(
+            message.guild,
+            message.channel,
+            message.member?.voice.channel,
+          );
+
+          const tracks = await youtube.getInfo(args.target);
+          music.addTracksInQueue(message.guild, tracks);
+          music.play(message.guild, message.channel);
+        }
+      } else if (args.subCommand == 'tw') {
+        if (message.channel instanceof TextChannel) {
+          await music.joinChannel(
+            message.guild,
+            message.channel,
+            message.member?.voice.channel,
+          );
+          music.playOther(message.guild, message.channel, args.target);
+        }
+      } else if (args.subCommand == '') {
+        if (message.channel instanceof TextChannel)
+          return music.resume(message.guild, message.channel);
       }
     } catch (e) {
       throw e;
