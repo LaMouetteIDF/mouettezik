@@ -163,8 +163,7 @@ export class YtPlayer extends Player {
   ) {
     const guildID = guild.id;
     let state = this._state.get(guildID);
-    if (!state)
-      throw new Error('Guild are not initialized. Please use init command');
+    if (!state) this._state.new(guildID, textChannel);
     if (state.voiceChannelID) {
       voiceChannel ==
         this._provider.client.channels.cache.get(state.voiceChannelID);
