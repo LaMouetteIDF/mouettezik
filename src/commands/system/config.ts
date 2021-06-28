@@ -65,32 +65,30 @@ export class Config extends Command {
     const download = this.client.download;
     const music = this.client.music;
 
+    const guild = message.guild;
+
+    let channel: TextChannel;
+    if (message.channel instanceof TextChannel) {
+      channel = message.channel;
+    } else return;
+
     try {
       if (args.subCommand == 'init') {
-        if (message.channel instanceof TextChannel) {
-          music.intiGuild(message.guild, message.channel);
-        }
+        music.setTextChannel(guild, channel);
+        music.setLogChannel(guild, channel);
       } else if (args.subCommand == 'set') {
         if (args.params == 'logchannel') {
-          if (message.channel instanceof TextChannel) {
-            music.setLogChannel(message.guild, message.channel);
-          }
+          music.setLogChannel(guild, channel);
         } else if (args.params == 'textchannel') {
-          if (message.channel instanceof TextChannel) {
-            music.setTextChannel(message.guild, message.channel);
-          }
+          music.setTextChannel(message.guild, channel);
         }
       } else if (args.subCommand == 'get') {
         if (args.params == 'logchannel') {
-          if (message.channel instanceof TextChannel) {
-            const channel = music.getLogChannel(message.guild);
-            return message.say(`The logs channel is <#${channel.id}>`);
-          }
+          const channel = music.getLogChannel(guild);
+          return message.say(`The logs channel is <#${channel.id}>`);
         } else if (args.params == 'textchannel') {
-          if (message.channel instanceof TextChannel) {
-            const channel = music.getTextChannel(message.guild);
-            return message.say(`The default channel is <#${channel.id}>`);
-          }
+          const channel = music.getTextChannel(guild);
+          return message.say(`The default channel is <#${channel.id}>`);
         }
       }
     } catch (e) {

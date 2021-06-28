@@ -55,10 +55,7 @@ export class Player extends EventEmitter {
   setTextChannel(guild: CommandoGuild, textChannel: TextChannel) {
     this._provider.set(guild, 'textChannelID', textChannel.id);
     const state = this._state.get(guild.id);
-    if (!state)
-      throw new Error(
-        'Your guild is not initialized. Please use command [!config init]',
-      );
+    if (!state) this._state.new(guild.id, textChannel);
     state.textChannelID = textChannel.id;
     state.textChannel = textChannel;
     this.emit(
@@ -81,10 +78,7 @@ export class Player extends EventEmitter {
   setLogChannel(guild: CommandoGuild, logsChannel: TextChannel) {
     this._provider.set(guild, 'logsChannelID', logsChannel.id);
     const state = this._state.get(guild.id);
-    if (!state)
-      throw new Error(
-        'Your guild is not initialized. Please use command [!config init]',
-      );
+    if (!state) this._state.new(guild.id, logsChannel);
     state.logsChannelID = logsChannel.id;
     state.logsChannel = logsChannel;
     this.emit(

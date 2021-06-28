@@ -78,8 +78,7 @@ export class Youtube {
       });
     } else if (this.validateID(p.id)) {
       let item = await getInfo(p.id);
-      let thumbnail = '';
-      item.videoDetails.thumbnail;
+      let thumbnail: string;
       if (item.videoDetails.thumbnails.length > 0) {
         const thumbnails = item.videoDetails.thumbnails.filter(
           (t) => t.height == 336 && t.width == 188,

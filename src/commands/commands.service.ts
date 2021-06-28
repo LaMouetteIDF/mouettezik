@@ -4,6 +4,7 @@ import { CommandoClient, CommandoRegistry } from 'discord.js-commando';
 import { ClientProvider } from '@/providers/client';
 
 import { Play } from './music/play';
+import { Stream } from './music/stream';
 import { Pause } from './music/pause';
 import { Next } from './music/next';
 import { Stop } from './music/stop';
@@ -34,6 +35,6 @@ export class CommandsService {
         ['music', 'Musique'],
         ['sys', 'System'],
       ])
-      .registerCommands([Play, Pause, Stop, Volume, Youtube, Config]);
+      .registerCommands([Play, Stream, Pause, Stop, Volume, Youtube, Config]);
   }
 }
