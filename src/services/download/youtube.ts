@@ -1,20 +1,21 @@
-import { Track, Tracks } from '../player/type';
 import {
-  getURLVideoID,
   validateID,
-  validateURL,
   getInfo,
   filterFormats,
   downloadFromInfo,
 } from 'ytdl-core';
 
 import * as ytpl from 'ytpl';
+import * as execa from 'execa';
+import { PassThrough } from 'stream';
 
 export interface ParseResult {
   url: string;
   id: string;
   t: number;
 }
+const regExp =
+  /^https?\:\/\/(?:www\.youtube\.com\/|m\.youtube\.com\/|music\.youtube\.com\/|youtube\.com\/)?(?:\?vi?=|youtu\.be\/|vi?\/|user\/.+\/u\/\w{1,2}\/|embed\/|playlist\?(?:.\&)?list=|watch\?(?:.*\&)?vi?=|\&vi?=|\?(?:.*\&)?vi?=)([^#\&\?\n\/<>"']*)(?:(?:\?|\&)?list=(?:[^#\&\?\n\/<>"']*)?)?(?:[\?\&]index=(?:\d+)?)?(?:[\?\&]t=)?(\d+)?$/i;
 
 export class Youtube {
   validateID = validateID;
@@ -29,9 +30,6 @@ export class Youtube {
   }
 
   parseURL(url: string): ParseResult | null {
-    const regExp =
-      /^https?\:\/\/(?:www\.youtube\.com\/|m\.youtube\.com\/|music\.youtube\.com\/|youtube\.com\/)?(?:\?vi?=|youtu\.be\/|vi?\/|user\/.+\/u\/\w{1,2}\/|embed\/|playlist\?(?:.\&)?list=|watch\?(?:.*\&)?vi?=|\&vi?=|\?(?:.*\&)?vi?=)([^#\&\?\n\/<>"']*)(?:\?list=(?:[^#\&\?\n\/<>"']*)?)?(?:[\?\&]t=)?(\d+)?$/i;
-
     const match = url.match(regExp);
 
     if (Array.isArray(match)) {
@@ -69,9 +67,11 @@ export class Youtube {
           );
           if (thumbnails.length == 0) thumbnail = item.thumbnails[0].url;
         }
+
         tracks.push({
           title: item.title,
-          url: item.url,
+          url: item.shortUrl,
+          live: item.isLive,
           startTime: p.t,
           thumbnail,
         });
@@ -87,9 +87,11 @@ export class Youtube {
         if (thumbnails.length == 0)
           thumbnail = item.videoDetails.thumbnails[0].url;
       }
+
       tracks.push({
         title: item.videoDetails.title,
         url: item.videoDetails.video_url,
+        live: item.videoDetails.isLiveContent,
         startTime: p.t,
         thumbnail,
       });
@@ -101,19 +103,10 @@ export class Youtube {
     return tracks;
   }
 
-  /**
-   *
-   * @param url URL or VideoID
-   */
-  // async getStream(url: string) {
-  //   const info = await getInfo(url);
-  // }
-
   async getAudioStream(url: string) {
     try {
       const info = await getInfo(url);
-      // const urlParse = this.parseURL(url);
-      // console.log(urlParse);
+      // console.log(info);
 
       let audioFormats = filterFormats(info.formats, 'audioonly');
       if (audioFormats.length <= 0)

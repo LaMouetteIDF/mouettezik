@@ -9,7 +9,10 @@ import { FfmpegCommand } from 'fluent-ffmpeg';
 
 interface PlayerEvents {
   play: [text: string, guild: CommandoGuild, channel: TextChannel];
+  stream: [text: string, guild: CommandoGuild, channel: TextChannel];
+  stop: [text: string, guild: CommandoGuild, channel: TextChannel];
   pause: [text: string, guild: CommandoGuild, channel: TextChannel];
+  volume: [text: string, guild: CommandoGuild, channel: TextChannel];
   config: [text: string, guild: CommandoGuild, channel: TextChannel];
   // play: [string, CommandoGuild, TextChannel];
 }
@@ -34,6 +37,7 @@ export interface PlayerState {
   logsChannel: TextChannel;
   voiceConnection?: VoiceConnection;
   ffmpeg?: FfmpegCommand;
+  killFfmpeg?: Function;
   dispatch?: StreamDispatcher;
 
   /**
@@ -50,19 +54,23 @@ export interface PlayerState {
    * Playing is the current playing state
    */
   playing: boolean;
+  currentPlayingIsLive: boolean;
   timer?: { newTimer: () => void; clearTimer: () => void };
 }
 
 export interface PlayerQueue {
   potition: number;
+  loop: boolean;
+  loopOneTrack: boolean;
   tracks: Tracks;
+  stream?: Track;
 }
 
-export type Tracks = Array<Track>;
+// export type Tracks = Array<Track>;
 
-export interface Track {
-  title: string;
-  url: string;
-  startTime: number;
-  thumbnail: string;
-}
+// export interface Track {
+//   title: string;
+//   url: string;
+//   startTime: number;
+//   thumbnail: string;
+// }

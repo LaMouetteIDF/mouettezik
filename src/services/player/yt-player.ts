@@ -2,8 +2,9 @@ import { Message, TextChannel, VoiceChannel } from 'discord.js';
 import { CommandoGuild, SQLiteProvider } from 'discord.js-commando';
 
 import { Youtube } from '@/services/download/youtube';
+import { Downloads } from '@/services/download';
 import { Player } from './player';
-import { PlayerState, Tracks } from './type';
+import { PlayerState } from './type';
 
 // import { DbKeyPlayerState } from './contants';
 
@@ -11,40 +12,48 @@ export class YtPlayer extends Player {
   protected _lastMessage: Map<string, Message>;
   // protected _provider: SQLiteProvider;
 
-  constructor(youtube: Youtube, provider: SQLiteProvider) {
-    super(youtube, provider);
+  constructor(download: Downloads, provider: SQLiteProvider) {
+    super(download, provider);
     this._lastMessage = new Map();
     // this._provider = provider;
   }
 
-  play(guild: CommandoGuild, textChannel: TextChannel) {
-    const state = this._state.get(guild.id);
-    const queue = this._queue.get(guild.id);
+  play(guild: CommandoGuild, textChannel: TextChannel, tracks: Tracks) {
+    let state = this._state.get(guild.id);
+    let queue = this._queue.get(guild.id);
 
-    if (!state) throw new Error('Use init command please');
-    if (!queue) throw new Error('Queue is not initialized');
+    if (!state) state = this._state.new(guild.id, textChannel);
+    if (!queue) queue = this._queue.new(guild.id);
 
-    // console.log(queue.tracks, 'pos', queue.potition);
+    queue.potition = queue.tracks.length;
+    this.addTracksInQueue(guild, tracks);
     if (state.playing) {
-      queue.potition++;
-      state.ffmpeg?.kill('SIGKILL');
+      state.playing = false;
+      state.killFfmpeg?.();
+      state.voiceConnection?.disconnect();
+      delete state.dispatch;
     }
+    state.currentPlayingIsLive = false;
 
     this._play(guild, queue.tracks[queue.potition]);
   }
 
-  pause(guild: CommandoGuild, textChannel: TextChannel) {
-    const errorNoMusic = 'No music is playing !';
-
+  pause(guild: CommandoGuild) {
     const state = this._state.get(guild.id);
 
-    if (!state) return textChannel.send(errorNoMusic);
-    if (!state.voiceConnection?.dispatcher)
-      return textChannel.send(errorNoMusic);
-    if (state.voiceConnection?.dispatcher?.paused)
-      return textChannel.send('Music are already paused');
+    if (!state || !state.voiceConnection || !state.dispatch)
+      throw new Error('No music is playing !');
+    if (state.dispatch.paused) throw new Error('Music are already paused');
 
-    state.voiceConnection?.dispatcher?.pause();
+    if (state.currentPlayingIsLive) {
+      state.killFfmpeg?.();
+      state.voiceConnection.disconnect();
+      delete state.dispatch;
+    } else {
+      state.dispatch.pause();
+      state.playing = false;
+    }
+
     this.emit(
       'pause',
       `Player music is paused, in <#${state.voiceConnection.channel.id}>`,
@@ -53,26 +62,82 @@ export class YtPlayer extends Player {
     );
   }
 
-  resume(guild: CommandoGuild, textChannel: TextChannel) {
-    const errorNoMusic = 'No music is paused !';
-
+  async resume(guild: CommandoGuild) {
     const state = this._state.get(guild.id);
+    const queue = this._queue.get(guild.id);
 
-    if (!state) return textChannel.send(errorNoMusic);
-    if (!state.voiceConnection?.dispatcher)
-      return textChannel.send(errorNoMusic);
-    if (!state.voiceConnection?.dispatcher?.paused)
-      return textChannel.send('Music are already playing');
+    if (!state || !queue) throw new Error('No music or stream is paused');
 
-    state.voiceConnection?.dispatcher?.resume();
-    state.voiceConnection?.dispatcher?.pause();
-    state.voiceConnection?.dispatcher?.resume();
+    if (state.currentPlayingIsLive) {
+      if (!queue.stream) throw new Error('No stream is paused');
+      await this._play(guild, queue.stream);
+    } else {
+      if (!state.dispatch) throw new Error('No music or stream is paused');
+
+      if (!state.dispatch.paused) throw new Error('Music are already playing');
+
+      state.dispatch.resume();
+      state.dispatch.pause();
+      state.dispatch.resume();
+      state.playing = true;
+    }
+
     this.emit(
       'pause',
       `Player music is resumed, in <#${state.voiceConnection.channel.id}>`,
       guild,
       state.logsChannel,
     );
+  }
+
+  stop(guild: CommandoGuild) {
+    const state = this._state.get(guild.id);
+    const queue = this._queue.get(guild.id);
+
+    if (!state || !queue || !state.dispatch)
+      throw new Error('No music or stream is playing');
+
+    const ChannelID = state.voiceConnection?.channel.id;
+
+    state.killFfmpeg?.();
+
+    state.voiceConnection.disconnect();
+    state.playing = false;
+    state.currentPlayingIsLive = false;
+
+    delete state.dispatch;
+    delete state.voiceConnection;
+    if (ChannelID)
+      this.emit(
+        'stop',
+        `Playing is stoped, in <#${ChannelID}>`,
+        guild,
+        state.logsChannel,
+      );
+  }
+
+  volume(guild: CommandoGuild, textChannel: TextChannel, value?: number) {
+    const state = this._state.get(guild.id);
+    if (!state) throw new Error('Use init command please');
+
+    if (value) {
+      if (value >= 0 && value <= 100) {
+        state.volume = value;
+        this._provider.set(guild, 'volume', value);
+        if (state.voiceConnection?.dispatcher) {
+          state.voiceConnection.dispatcher.setVolume(value / 100);
+        }
+
+        this.emit(
+          'play',
+          `Volume on this guild is now ${value}%`,
+          guild,
+          state.logsChannel,
+        );
+      } else throw new Error('The volume should be between 1 and 100');
+    } else {
+      textChannel.send(`The volume is ${state.volume}%`);
+    }
   }
 
   addTracksInQueue(guild: CommandoGuild, tracks: Tracks) {
@@ -109,15 +174,41 @@ export class YtPlayer extends Player {
 
     try {
       const connection = await voiceChannel.join();
+      connection.on('disconnect', (err) => {
+        if (err) console.log(err);
+        state.killFfmpeg?.();
+        delete state.voiceConnection;
+        delete state.dispatch;
+      });
       state.voiceChannelID = voiceChannel.id;
       state.voiceConnection = connection;
       return connection;
     } catch (e) {
       console.log(e);
-
       throw e;
     }
   }
 
-  async isJoinnableChannel() {}
+  async playStream(
+    guild: CommandoGuild,
+    textChannel: TextChannel,
+    track?: Track,
+  ) {
+    let state = this._state.get(guild.id);
+    let queue = this._queue.get(guild.id);
+
+    if (!state) state = this._state.new(guild.id, textChannel);
+    if (!queue) queue = this._queue.new(guild.id);
+
+    const stream = track ?? queue.stream;
+
+    if (!stream) throw new Error('Stream not found in queue await.');
+
+    if (!stream.live) throw new Error('This url is not live stream');
+
+    await this._play(guild, stream);
+    state.currentPlayingIsLive = true;
+  }
+
+  async stopStream(guild: CommandoGuild, textChannel: TextChannel) {}
 }

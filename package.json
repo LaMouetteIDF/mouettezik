@@ -28,6 +28,7 @@
     "@nestjs/platform-express": "^7.6.18",
     "discord.js": "^12.5.3",
     "discord.js-commando": "^0.12.3",
+    "execa": "^5.1.1",
     "ffmpeg": "0.0.4",
     "ffmpeg-static": "^4.4.0",
     "fluent-ffmpeg": "^2.1.2",

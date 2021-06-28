@@ -1,4 +1,4 @@
-import { Message } from 'discord.js';
+import { Message, TextChannel } from 'discord.js';
 import {
   ArgumentCollectorResult,
   Command,
@@ -7,7 +7,6 @@ import {
 } from 'discord.js-commando';
 
 export class Stop extends Command {
-  private _initListeners: any;
   constructor(client: CommandoClient) {
     super(client, {
       name: 'stop',
@@ -17,18 +16,43 @@ export class Stop extends Command {
       description: 'Stop player',
       examples: ['stop'],
       guildOnly: true,
-      clientPermissions: ['CONNECT', 'SPEAK'],
+      // clientPermissions: ['CONNECT', 'SPEAK'],
       argsType: 'multiple',
     });
+
+    try {
+      this._initListeners();
+    } catch (e) {
+      console.log('Failed to initialize PlayCommand listeners', e);
+    }
   }
+
   public run(
     message: CommandoMessage,
     args: string | object | string[],
     fromPattern: boolean,
     result?: ArgumentCollectorResult<object>,
   ): Promise<Message | Message[]> {
-    this.client.provider.set(message.guild, args[0], args[1]);
+    const download = this.client.download;
+    const music = this.client.music;
 
-    return message.say('OK');
+    const guild = message.guild;
+
+    let channel: TextChannel;
+    if (message.channel instanceof TextChannel) {
+      channel = message.channel;
+    } else return;
+
+    try {
+      music.stop(guild);
+    } catch (e) {
+      message.reply(`Error: \`${e.message}\``);
+    }
+  }
+
+  private _initListeners() {
+    this.client.music.on('stop', (text, _guild, channel) => {
+      channel.send(text);
+    });
   }
 }

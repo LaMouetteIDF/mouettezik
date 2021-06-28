@@ -8,16 +8,29 @@ import {
   CommandoMessage,
 } from 'discord.js-commando';
 
-export class Pause extends Command {
+type Args = {
+  value?: number;
+};
+
+export class Volume extends Command {
   constructor(client: CommandoClient) {
     super(client, {
-      name: 'pause',
+      name: 'vol',
+      aliases: ['volume'],
       group: 'music',
-      memberName: 'pause',
-      description: 'Pause current playing music',
-      examples: ['pause'],
+      memberName: 'volume',
+      description: 'Set or get current volume',
+      examples: ['vol', 'vol [number]', 'volume', 'volume [number]'],
       guildOnly: true,
       // clientPermissions: ['CONNECT', 'SPEAK'],
+      args: [
+        {
+          key: 'value',
+          prompt: 'Value',
+          type: 'integer',
+          default: -1,
+        },
+      ],
     });
 
     try {
@@ -29,26 +42,33 @@ export class Pause extends Command {
 
   async run(
     message: CommandoMessage,
-    args: string,
+    args: Args,
     _fromPattern: boolean,
     _result?: ArgumentCollectorResult<object>,
   ): Promise<Message | Message[]> {
     const download = this.client.download;
     const music = this.client.music;
 
+    const guild = message.guild;
+
+    let channel: TextChannel;
+    if (message.channel instanceof TextChannel) {
+      channel = message.channel;
+    } else return;
+
+    const volume = args.value >= 0 ? args.value : undefined;
+
     try {
-      if (message.channel instanceof TextChannel)
-        music.pause(message.guild, message.channel);
+      music.volume(guild, channel, volume);
     } catch (e) {
       console.log(e);
-
       throw e;
     }
     return;
   }
 
   private _initListeners() {
-    this.client.music.on('pause', (text, _guild, channel) => {
+    this.client.music.on('volume', (text, _guild, channel) => {
       channel.send(text);
     });
   }

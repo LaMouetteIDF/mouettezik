@@ -1,14 +1,15 @@
 import { EventEmitter } from 'events';
+import { CommandoGuild, SQLiteProvider } from 'discord.js-commando';
+import { Downloads } from '@/services/download';
 import { Youtube } from '@/services/download/youtube';
 // import { EventEmitter } from 'stream';
-import { PlayerEvents, PlayerState, PlayerQueue, Track } from './type';
+import { PlayerEvents, PlayerState, PlayerQueue } from './type';
 import { CollectionQueue, CollectionState } from './utils';
-import { CommandoGuild, SQLiteProvider } from 'discord.js-commando';
 import { TextChannel, VoiceChannel } from 'discord.js';
 
 import * as ffmpeg from 'fluent-ffmpeg';
+import * as execa from 'execa';
 import { PassThrough, Readable } from 'stream';
-const youtubedl = require('youtube-dl-exec');
 
 export declare interface Player {
   on<K extends keyof PlayerEvents>(
@@ -26,14 +27,14 @@ export declare interface Player {
 }
 
 export class Player extends EventEmitter {
-  protected _youtube: Youtube;
+  protected _download: Downloads;
   protected _provider: SQLiteProvider;
   protected _queue: CollectionQueue;
   protected _state: CollectionState;
 
-  constructor(youtube: Youtube, provider: SQLiteProvider) {
+  constructor(download: Downloads, provider: SQLiteProvider) {
     super();
-    this._youtube = youtube;
+    this._download = download;
     this._provider = provider;
     this._queue = new CollectionQueue();
     this._state = new CollectionState();
@@ -105,86 +106,57 @@ export class Player extends EventEmitter {
 
   protected async _play(guild: CommandoGuild, track: Track) {
     const state = this._state.get(guild.id);
+    const queue = this._queue.get(guild.id);
     const connection = state.voiceConnection;
     if (connection) {
       try {
         let stream: Readable | PassThrough;
-        if (track.startTime > 0) {
-          stream = new PassThrough();
-          const command = ffmpeg()
-            .input(await this._youtube.getAudioStream(track.url))
-            .setStartTime(track.startTime)
-            .audioFrequency(48000)
-            .audioChannels(2)
-            .format('mp3')
-            .on('error', function () {
-              console.log('Ffmpeg has been killed');
-            });
-
-          state.ffmpeg = command;
-
-          if (stream instanceof PassThrough) command.pipe(stream);
-        } else {
-          stream = await this._youtube.getAudioStream(track.url);
+        const st = await this._download.getAudioStream(track);
+        if (st instanceof Readable) stream = st;
+        else {
+          stream = st.stream;
+          state.killFfmpeg = st.kill;
         }
 
         const dispatch = connection.play(stream);
-        state.dispatch = dispatch;
-        dispatch.setVolume(20 / 100);
-        state.playing = true;
-      } catch (e) {
-        console.log(e);
-      }
-    }
-  }
-
-  playOther(guild: CommandoGuild, textChannel: TextChannel, url: string) {
-    const state = this._state.get(guild.id);
-    const connection = state.voiceConnection;
-    if (connection) {
-      try {
-        let stream: Readable | PassThrough;
-        stream = new PassThrough();
-
-        const preStream = new PassThrough();
-
-        // youtubedl(url, {
-        //   dumpSingleJson: true,
-        //   noWarnings: true,
-        //   noCallHome: true,
-        //   noCheckCertificate: true,
-        //   preferFreeFormats: true,
-        //   youtubeSkipDashManifest: true,
-        //   referer: url,
-        // }).then((output) => console.log(output));
-
-        const audio = youtubedl.raw(url, {
-          // extractAudio: true,
-          // audioFormat: 'mp4',
-        });
-        audio.stdout.pipe(preStream);
-        // console.log(audio.stdout);
-        const command = ffmpeg()
-          .input(preStream)
-          .audioFrequency(48000)
-          .audioChannels(2)
-          .format('mp4')
-          .on('error', function (e) {
-            console.log(e);
-
-            console.log('Ffmpeg has been killed');
+        dispatch
+          .on('start', () => {
+            state.playing = true;
+            if (state.currentPlayingIsLive) {
+              this.emit(
+                'stream',
+                `Streaming: **${track.title}**, in <#${connection.channel.id}>\n${track.url}`,
+                guild,
+                state.logsChannel,
+              );
+            } else {
+              this.emit(
+                'play',
+                `Playing: **${track.title}**, in <#${connection.channel.id}>\n${track.url}`,
+                guild,
+                state.logsChannel,
+              );
+            }
+          })
+          .on('finish', () => {
+            state.killFfmpeg?.();
+            if (!state.playing) return;
+            if (queue.loopOneTrack) return this._play(guild, track);
+            if (queue.potition >= queue.tracks.length - 1 && queue.loop) {
+              const pos = (queue.potition = 0);
+              const track = queue.tracks[pos];
+              this._play(guild, track);
+            } else {
+              const pos = ++queue.potition;
+              const track = queue.tracks[pos];
+              this._play(guild, track);
+            }
           });
-
-        state.ffmpeg = command;
-
-        if (stream instanceof PassThrough) command.pipe(stream);
-
-        const dispatch = connection.play(stream);
         state.dispatch = dispatch;
-        dispatch.setVolume(20 / 100);
-        state.playing = true;
+        dispatch.setVolume(state.volume / 100);
       } catch (e) {
         console.log(e);
+        throw e;
       }
     }
   }

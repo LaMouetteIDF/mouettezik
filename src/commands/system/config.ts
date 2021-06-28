@@ -62,7 +62,7 @@ export class Config extends Command {
     _fromPattern: boolean,
     _result?: ArgumentCollectorResult<object>,
   ): Promise<Message | Message[]> {
-    const youtube = this.client.youtube;
+    const download = this.client.download;
     const music = this.client.music;
 
     try {

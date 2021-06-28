@@ -1,12 +1,24 @@
 import { Guild } from 'discord.js';
 import { Youtube } from '@/services/download/youtube';
 import { YtPlayer } from '@/services/player/yt-player';
+import { Downloads } from '@/services/download';
 
-declare global {}
+declare global {
+  type Tracks = Array<Track>;
+
+  interface Track {
+    title: string;
+    url: string;
+    live: boolean;
+    directURL?: string;
+    startTime: number;
+    thumbnail: string;
+  }
+}
 
 declare module 'discord.js-commando' {
   interface Client {
-    youtube: Youtube;
+    download: Downloads;
     music: YtPlayer;
   }
 

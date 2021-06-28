@@ -12,14 +12,14 @@ type Args = {
   target: string;
 };
 
-export class Play extends Command {
+export class Stream extends Command {
   constructor(client: CommandoClient) {
     super(client, {
-      name: 'play',
+      name: 'stream',
       group: 'music',
-      memberName: 'play',
-      description: 'Plays loaded queue',
-      examples: ['play', 'play <VIDEO-URL>'],
+      memberName: 'stream',
+      description: 'Get audio live stream',
+      examples: ['stream', 'steam <STREAM_URL>'],
       guildOnly: true,
       // clientPermissions: ['CONNECT', 'SPEAK'],
       args: [
@@ -60,15 +60,17 @@ export class Play extends Command {
         await music.joinChannel(guild, channel, message.member?.voice.channel);
 
         const tracks = await download.getInfo(args.target);
+        if (tracks.length > 1)
+          throw new Error(
+            'I have found many feeds from your url. Please use only one feed',
+          );
 
-        for (const track of tracks) {
-          if (track.live)
-            throw new Error(
-              "This command don't accept live stream link. Please use stream command (e.g.: !steam <STREAM-URL>).",
-            );
-        }
+        if (!tracks[0].live)
+          throw new Error(
+            'This order only accepts live streaming link. Please use the play command to play videos (e.g.: !play <VIDEO_URL>).',
+          );
 
-        music.play(guild, channel, tracks);
+        music.playStream(guild, channel, tracks[0]);
       } else if (!args.target) {
         if (message.channel instanceof TextChannel) music.resume(message.guild);
       }
@@ -78,7 +80,7 @@ export class Play extends Command {
   }
 
   private _initListeners() {
-    this.client.music.on('play', (text, _guild, channel) => {
+    this.client.music.on('stream', (text, _guild, channel) => {
       channel.send(text);
     });
   }

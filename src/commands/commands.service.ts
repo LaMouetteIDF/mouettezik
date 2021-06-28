@@ -8,6 +8,7 @@ import { Pause } from './music/pause';
 import { Next } from './music/next';
 import { Stop } from './music/stop';
 import { Kill } from './music/kill';
+import { Volume } from './music/volume';
 import { Youtube } from './music/youtube';
 import { Config } from './system/config';
 
@@ -33,6 +34,6 @@ export class CommandsService {
         ['music', 'Musique'],
         ['sys', 'System'],
       ])
-      .registerCommands([Play, Pause, Stop, Youtube, Config]);
+      .registerCommands([Play, Pause, Stop, Volume, Youtube, Config]);
   }
 }

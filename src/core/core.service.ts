@@ -7,7 +7,7 @@ import * as sql from 'sqlite';
 import { ClientProvider } from '@/providers/client';
 import { CommandsService } from '@/commands/commands.service';
 import { YtPlayer } from '@/services/player/yt-player';
-import { Youtube } from '@/services/download/youtube';
+import { Downloads } from '@/services/download';
 
 @Injectable()
 export class CoreService implements OnModuleInit {
@@ -38,14 +38,14 @@ export class CoreService implements OnModuleInit {
 
     const provider = new SQLiteProvider(await this.getDB());
 
-    const youtube = new Youtube();
+    const downloads = new Downloads();
 
     await provider.init(client);
 
     client.setProvider(provider);
 
-    client.youtube = youtube;
-    client.music = new YtPlayer(youtube, provider);
+    client.download = downloads;
+    client.music = new YtPlayer(downloads, provider);
 
     this.commandsService.register(client);
 
