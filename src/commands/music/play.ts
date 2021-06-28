@@ -1,4 +1,5 @@
 import { Youtube } from '@/services/download/youtube';
+import { Helper } from '@/services/helper';
 import { Message, MessageEmbed, TextChannel, VoiceChannel } from 'discord.js';
 import { SQLiteProvider } from 'discord.js-commando';
 import {
@@ -55,10 +56,17 @@ export class Play extends Command {
       channel = message.channel;
     } else return;
 
+    let loaderMsg: Message;
+
     try {
-      if (args.target) {
+      const joinChannel = async () =>
         await music.joinChannel(guild, channel, message.member?.voice.channel);
 
+      loaderMsg = await Helper.constructLoadingMessage(
+        await message.say('Please be patientstart the music'),
+      );
+
+      if (args.target) {
         const tracks = await download.getInfo(args.target);
 
         for (const track of tracks) {
@@ -68,12 +76,18 @@ export class Play extends Command {
             );
         }
 
-        music.play(guild, channel, tracks);
+        await music.play(guild, channel, tracks, joinChannel);
       } else if (!args.target) {
-        if (message.channel instanceof TextChannel) music.resume(message.guild);
+        if (music.isPaused(guild)) music.resume(message.guild);
+        else {
+          await music.play(guild, channel, undefined, joinChannel);
+        }
       }
+      loaderMsg.delete();
     } catch (e) {
-      message.reply(`Error: \`${e.message}\``);
+      console.log(e);
+      loaderMsg.delete();
+      return message.reply(`Error: \`${e.message}\``);
     }
   }
 

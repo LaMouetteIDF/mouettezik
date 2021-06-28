@@ -55,10 +55,7 @@ export class Player extends EventEmitter {
   setTextChannel(guild: CommandoGuild, textChannel: TextChannel) {
     this._provider.set(guild, 'textChannelID', textChannel.id);
     const state = this._state.get(guild.id);
-    if (!state)
-      throw new Error(
-        'Your guild is not initialized. Please use command [!config init]',
-      );
+    if (!state) this._state.new(guild.id, textChannel);
     state.textChannelID = textChannel.id;
     state.textChannel = textChannel;
     this.emit(
@@ -81,10 +78,7 @@ export class Player extends EventEmitter {
   setLogChannel(guild: CommandoGuild, logsChannel: TextChannel) {
     this._provider.set(guild, 'logsChannelID', logsChannel.id);
     const state = this._state.get(guild.id);
-    if (!state)
-      throw new Error(
-        'Your guild is not initialized. Please use command [!config init]',
-      );
+    if (!state) this._state.new(guild.id, logsChannel);
     state.logsChannelID = logsChannel.id;
     state.logsChannel = logsChannel;
     this.emit(
@@ -142,7 +136,7 @@ export class Player extends EventEmitter {
             state.killFfmpeg?.();
             if (!state.playing) return;
             if (queue.loopOneTrack) return this._play(guild, track);
-            if (queue.potition >= queue.tracks.length - 1 && queue.loop) {
+            if (queue.potition >= queue.tracks.length - 1) {
               const pos = (queue.potition = 0);
               const track = queue.tracks[pos];
               this._play(guild, track);
@@ -211,15 +205,6 @@ export class Player extends EventEmitter {
         // get previous music playing time position
         const timepos = this._provider.get(guild, 'timepos');
         if (timepos) state.curPosPlayingTime = timepos;
-
-        console.log(
-          textChannelID,
-          logsChannelID,
-          voiceChannelID,
-          volume,
-          playing,
-          timepos,
-        );
       });
     });
   }

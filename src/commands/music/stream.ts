@@ -1,4 +1,5 @@
 import { Youtube } from '@/services/download/youtube';
+import { Helper } from '@/services/helper';
 import { Message, MessageEmbed, TextChannel, VoiceChannel } from 'discord.js';
 import { SQLiteProvider } from 'discord.js-commando';
 import {
@@ -55,7 +56,13 @@ export class Stream extends Command {
       channel = message.channel;
     } else return;
 
+    let loaderMsg: Message;
+
     try {
+      loaderMsg = await Helper.constructLoadingMessage(
+        await message.say('Please patient start the stream'),
+      );
+
       if (args.target) {
         await music.joinChannel(guild, channel, message.member?.voice.channel);
 
@@ -70,12 +77,15 @@ export class Stream extends Command {
             'This order only accepts live streaming link. Please use the play command to play videos (e.g.: !play <VIDEO_URL>).',
           );
 
-        music.playStream(guild, channel, tracks[0]);
+        await music.playStream(guild, channel, tracks[0]);
       } else if (!args.target) {
-        if (message.channel instanceof TextChannel) music.resume(message.guild);
+        await music.resume(message.guild);
       }
+      loaderMsg.delete();
     } catch (e) {
-      message.reply(`Error: \`${e.message}\``);
+      console.log(e);
+      loaderMsg.delete();
+      return message.reply(`Error: \`${e.message}\``);
     }
   }
 

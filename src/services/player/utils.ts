@@ -20,7 +20,7 @@ export class CollectionState extends Map<string, PlayerState> {
     const queue: PlayerState = {
       textChannel,
       logsChannel: logsChannel ?? textChannel,
-      volume: 0,
+      volume: 50,
       curPosPlayingTime: 0,
       playing: false,
       currentPlayingIsLive: false,
