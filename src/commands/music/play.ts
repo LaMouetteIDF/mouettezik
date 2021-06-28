@@ -63,7 +63,7 @@ export class Play extends Command {
         await music.joinChannel(guild, channel, message.member?.voice.channel);
 
       loaderMsg = await Helper.constructLoadingMessage(
-        await message.say('Please be patientstart the music'),
+        await message.say('Please be patient start the music'),
       );
 
       if (args.target) {
