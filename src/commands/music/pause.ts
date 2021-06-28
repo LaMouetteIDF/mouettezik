@@ -37,8 +37,7 @@ export class Pause extends Command {
     const music = this.client.music;
 
     try {
-      if (message.channel instanceof TextChannel)
-        music.pause(message.guild, message.channel);
+      music.pause(message.guild);
     } catch (e) {
       console.log(e);
 
