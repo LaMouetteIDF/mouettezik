@@ -1,48 +1,57 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { SQLiteProvider } from 'discord.js-commando';
+import * as sqlite from 'sqlite3';
+import * as sql from 'sqlite';
+
+import { ClientProvider } from '@/providers/client';
 import { CommandsService } from '@/commands/commands.service';
-import { ClientService } from '@/client/client.service';
-import { Message } from 'discord.js';
-import { Queue, ServerQueue } from './server-queue';
+import { YtPlayer } from '@/services/player/yt-player';
+import { Downloads } from '@/services/download';
 
 @Injectable()
 export class CoreService implements OnModuleInit {
   private readonly logger = new Logger(CoreService.name);
 
   constructor(
+    private clientProvider: ClientProvider,
+    private commandsService: CommandsService,
     private configService: ConfigService,
-    private Commands: CommandsService,
-    private client: ClientService,
   ) {}
 
   onModuleInit() {
+    this.logger.log('Start Discord bot!');
     this.run();
   }
 
-  run() {
-    this.client.addEventListener('message', (message: Message) => {
-      const prefix = this.configService.get('CMD_PREFIX');
-      if (!message.content.startsWith(prefix) || message.author.bot) return;
-
-      const args = message.content.slice(prefix.length).trim().split(/ +/);
-      const command = args.shift().toLowerCase();
-
-      if (this.Commands.isExistCommand(command)) {
-        let guildID = message.guild?.id;
-        if (!guildID)
-          return message.channel.send(
-            'je suis au chiote là me fait pas chier !!',
-          );
-        let serverQueue = Queue.get(guildID);
-
-        if (!serverQueue) {
-          serverQueue = new ServerQueue(message);
-          Queue.set(guildID, serverQueue);
-        }
-
-        const exec = this.Commands.getExec(command);
-        exec(message, serverQueue);
-      }
+  getDB() {
+    return sql.open({
+      filename: this.configService.get('DATABASE'),
+      driver: sqlite.cached.Database,
     });
+  }
+
+  async run() {
+    // START TEST COMMANDO
+
+    const client = this.clientProvider.getDiscordClient();
+
+    const provider = new SQLiteProvider(await this.getDB());
+
+    const downloads = new Downloads();
+
+    await provider.init(client);
+
+    client.setProvider(provider);
+
+    client.download = downloads;
+    client.music = new YtPlayer(downloads, provider);
+
+    this.commandsService.register(client);
+
+    // END TEST COMMANDO
+
+    const token = this.configService.get('TOKEN');
+    this.clientProvider.connect(token);
   }
 }

@@ -13,6 +13,7 @@
     "incremental": true,
     "paths": {
       "@/*": ["./src/*"]
-    }
+    },
+    "typeRoots": ["./src/types/index.d.ts"]
   }
 }
