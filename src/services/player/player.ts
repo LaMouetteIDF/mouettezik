@@ -142,7 +142,7 @@ export class Player extends EventEmitter {
             state.killFfmpeg?.();
             if (!state.playing) return;
             if (queue.loopOneTrack) return this._play(guild, track);
-            if (queue.potition >= queue.tracks.length - 1 && queue.loop) {
+            if (queue.potition >= queue.tracks.length - 1) {
               const pos = (queue.potition = 0);
               const track = queue.tracks[pos];
               this._play(guild, track);
@@ -211,15 +211,6 @@ export class Player extends EventEmitter {
         // get previous music playing time position
         const timepos = this._provider.get(guild, 'timepos');
         if (timepos) state.curPosPlayingTime = timepos;
-
-        console.log(
-          textChannelID,
-          logsChannelID,
-          voiceChannelID,
-          volume,
-          playing,
-          timepos,
-        );
       });
     });
   }

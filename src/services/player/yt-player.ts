@@ -1,4 +1,9 @@
-import { Message, TextChannel, VoiceChannel } from 'discord.js';
+import {
+  Message,
+  TextChannel,
+  VoiceChannel,
+  VoiceConnection,
+} from 'discord.js';
 import { CommandoGuild, SQLiteProvider } from 'discord.js-commando';
 
 import { Youtube } from '@/services/download/youtube';
@@ -18,24 +23,36 @@ export class YtPlayer extends Player {
     // this._provider = provider;
   }
 
-  play(guild: CommandoGuild, textChannel: TextChannel, tracks: Tracks) {
+  async play(
+    guild: CommandoGuild,
+    textChannel: TextChannel,
+    tracks?: Tracks,
+    joinchannel?: () => Promise<VoiceConnection>,
+  ) {
     let state = this._state.get(guild.id);
     let queue = this._queue.get(guild.id);
 
     if (!state) state = this._state.new(guild.id, textChannel);
     if (!queue) queue = this._queue.new(guild.id);
 
-    queue.potition = queue.tracks.length;
-    this.addTracksInQueue(guild, tracks);
+    queue.potition = tracks ? queue.tracks.length : 0;
+
+    if (tracks) this.addTracksInQueue(guild, tracks);
+
+    if (queue.tracks.length == 0)
+      throw new Error('Not found track in the queue');
+
     if (state.playing) {
       state.playing = false;
       state.killFfmpeg?.();
-      state.voiceConnection?.disconnect();
+      // state.voiceConnection?.disconnect();
       delete state.dispatch;
     }
     state.currentPlayingIsLive = false;
 
-    this._play(guild, queue.tracks[queue.potition]);
+    if (joinchannel) await joinchannel();
+
+    await this._play(guild, queue.tracks[queue.potition]);
   }
 
   pause(guild: CommandoGuild) {
@@ -163,7 +180,7 @@ export class YtPlayer extends Player {
   ) {
     const guildID = guild.id;
     let state = this._state.get(guildID);
-    if (!state) this._state.new(guildID, textChannel);
+    if (!state) state = this._state.new(guildID, textChannel);
     if (state.voiceChannelID) {
       voiceChannel ==
         this._provider.client.channels.cache.get(state.voiceChannelID);
@@ -209,5 +226,8 @@ export class YtPlayer extends Player {
     state.currentPlayingIsLive = true;
   }
 
-  async stopStream(guild: CommandoGuild, textChannel: TextChannel) {}
+  isPaused(guild: CommandoGuild) {
+    const state = this._state.get(guild.id);
+    return state && state.dispatch && state.dispatch.paused ? true : false;
+  }
 }

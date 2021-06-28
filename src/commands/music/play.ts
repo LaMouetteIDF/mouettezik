@@ -56,9 +56,9 @@ export class Play extends Command {
     } else return;
 
     try {
-      if (args.target) {
+      const joinChannel = async () =>
         await music.joinChannel(guild, channel, message.member?.voice.channel);
-
+      if (args.target) {
         const tracks = await download.getInfo(args.target);
 
         for (const track of tracks) {
@@ -68,12 +68,17 @@ export class Play extends Command {
             );
         }
 
-        music.play(guild, channel, tracks);
+        music.play(guild, channel, tracks, joinChannel);
       } else if (!args.target) {
-        if (message.channel instanceof TextChannel) music.resume(message.guild);
+        if (music.isPaused(guild)) music.resume(message.guild);
+        else {
+          music.play(guild, channel, undefined, joinChannel);
+        }
       }
     } catch (e) {
-      message.reply(`Error: \`${e.message}\``);
+      console.log(e);
+
+      return message.reply(`Error: \`${e.message}\``);
     }
   }
 
