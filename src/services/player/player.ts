@@ -54,8 +54,8 @@ export class Player extends EventEmitter {
 
   setTextChannel(guild: CommandoGuild, textChannel: TextChannel) {
     this._provider.set(guild, 'textChannelID', textChannel.id);
-    const state = this._state.get(guild.id);
-    if (!state) this._state.new(guild.id, textChannel);
+    let state = this._state.get(guild.id);
+    if (!state) state = this._state.new(guild.id, textChannel);
     state.textChannelID = textChannel.id;
     state.textChannel = textChannel;
     this.emit(
@@ -77,8 +77,8 @@ export class Player extends EventEmitter {
 
   setLogChannel(guild: CommandoGuild, logsChannel: TextChannel) {
     this._provider.set(guild, 'logsChannelID', logsChannel.id);
-    const state = this._state.get(guild.id);
-    if (!state) this._state.new(guild.id, logsChannel);
+    let state = this._state.get(guild.id);
+    if (!state) state = this._state.new(guild.id, logsChannel);
     state.logsChannelID = logsChannel.id;
     state.logsChannel = logsChannel;
     this.emit(
