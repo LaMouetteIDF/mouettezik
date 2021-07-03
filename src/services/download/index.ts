@@ -1,6 +1,7 @@
 import * as execa from 'execa';
 import * as ffmpeg from 'fluent-ffmpeg';
 import { PassThrough, Readable } from 'stream';
+import got from 'got';
 
 import { Youtube } from './youtube';
 
@@ -49,6 +50,19 @@ export class Downloads {
 
     return tracks;
   }
+
+  // private getstreamFromURL(url: string) {
+  //   try {
+  //     const stream = new PassThrough();
+
+  //     const res = got.stream(url)
+  //     res.on('')
+  //   } catch (e) {
+  //     console.log(e);
+  //     throw e
+
+  //   }
+  // }
 
   async getAudioStream(
     track: Track,

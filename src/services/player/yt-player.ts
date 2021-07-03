@@ -63,9 +63,11 @@ export class YtPlayer extends Player {
     if (state.dispatch.paused) throw new Error('Music are already paused');
 
     if (state.currentPlayingIsLive) {
-      state.killFfmpeg?.();
-      state.voiceConnection.disconnect();
-      delete state.dispatch;
+      state.dispatch.end(() => {
+        state.killFfmpeg?.();
+        delete state.dispatch;
+      });
+      state.playing = false;
     } else {
       state.dispatch.pause();
       state.playing = false;
@@ -111,26 +113,26 @@ export class YtPlayer extends Player {
     const state = this._state.get(guild.id);
     const queue = this._queue.get(guild.id);
 
-    if (!state || !queue || !state.dispatch)
+    if (!state || !queue || !state.voiceConnection || !state.dispatch)
       throw new Error('No music or stream is playing');
 
-    const ChannelID = state.voiceConnection?.channel.id;
+    const ChannelID = state.voiceConnection.channel.id;
 
-    state.killFfmpeg?.();
-
-    state.voiceConnection.disconnect();
-    state.playing = false;
-    state.currentPlayingIsLive = false;
-
+    state.dispatch.end(() => {
+      state.killFfmpeg?.();
+      state.voiceConnection.disconnect();
+      state.playing = false;
+      state.currentPlayingIsLive = false;
+      if (ChannelID)
+        this.emit(
+          'stop',
+          `Playing is stoped, in <#${ChannelID}>`,
+          guild,
+          state.logsChannel,
+        );
+    });
     delete state.dispatch;
     delete state.voiceConnection;
-    if (ChannelID)
-      this.emit(
-        'stop',
-        `Playing is stoped, in <#${ChannelID}>`,
-        guild,
-        state.logsChannel,
-      );
   }
 
   volume(guild: CommandoGuild, textChannel: TextChannel, value?: number) {
@@ -209,6 +211,7 @@ export class YtPlayer extends Player {
     guild: CommandoGuild,
     textChannel: TextChannel,
     track?: Track,
+    joinchannel?: () => Promise<VoiceConnection>,
   ) {
     let state = this._state.get(guild.id);
     let queue = this._queue.get(guild.id);
@@ -222,6 +225,10 @@ export class YtPlayer extends Player {
 
     if (!stream.live) throw new Error('This url is not live stream');
 
+    queue.stream = stream;
+
+    if (joinchannel) await joinchannel();
+    
     await this._play(guild, stream);
     state.currentPlayingIsLive = true;
   }
