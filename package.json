@@ -41,7 +41,7 @@
     "sqlite": "^4.0.23",
     "sqlite3": "^5.0.2",
     "youtube-dl-exec": "^1.2.4",
-    "ytdl-core": "^4.8.3",
+    "ytdl-core": "^4.9.2",
     "ytpl": "^2.2.1"
   },
   "devDependencies": {
