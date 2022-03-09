@@ -30,13 +30,12 @@ export type VoiceState = {
 };
 
 export class Voice {
-  private _currentPlaylist?: string;
   private readonly _state: VoiceState;
   private subscription: PlayerSubscription;
   private _guildVoiceAdaptor: InternalDiscordGatewayAdapterCreator;
 
   private _currentTrack?: TrackEntity;
-  private _queue: TrackEntity[];
+  private _queue: TrackEntity[] = [];
   private _loop: 'ALL' | 'ONE' | undefined;
   private _playlist?: {
     id: string;
@@ -179,7 +178,7 @@ export class Voice {
   }
 
   private async _nextTrack() {
-    if (this._queue.length > 0) {
+    if (this._queue && this._queue.length > 0) {
       this._currentTrack = this._queue.shift();
       await this._playCurrentTrack();
       return;
@@ -251,7 +250,7 @@ export class Voice {
       return this._playCurrentTrack();
     }
 
-    if (!this._playlist && this._queue.length == 0) this.stop();
+    this.stop();
   }
 
   private async _fetchVoiceAdaptor() {
@@ -296,17 +295,6 @@ export class Voice {
     this._state.status = VoiceStatus.Pause;
     return true;
   }
-
-  // public unpause() {
-  //   if (this._state === VoiceState.Play) return true;
-  //   if (this._state === VoiceState.Idle) return false;
-  //   const audioPlayer = this.subscription.player;
-  //   if (!audioPlayer) return false;
-  //   const ok = audioPlayer.unpause();
-  //   if (!ok) return false;
-  //   this._state = VoiceState.Play;
-  //   return true;
-  // }
 
   public stop() {
     if ([VoiceStatus.Idle, VoiceStatus.Stop].indexOf(this._state.status) >= 0)

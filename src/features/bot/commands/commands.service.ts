@@ -42,12 +42,11 @@ export class CommandsService implements OnApplicationBootstrap {
                 .setRequired(false),
             );
           }
-
-          if (!command) {
-            await commandsManager.create(commandBuilder.toJSON());
-          } else {
-            await commandsManager.edit(command.id, commandBuilder.toJSON());
-          }
+        }
+        if (!command) {
+          await commandsManager.create(commandBuilder.toJSON());
+        } else {
+          await commandsManager.edit(command.id, commandBuilder.toJSON());
         }
       });
     });
