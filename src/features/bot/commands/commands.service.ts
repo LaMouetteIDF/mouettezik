@@ -25,7 +25,7 @@ export class CommandsService implements OnApplicationBootstrap {
           (command) => command.name == commandBuilder.name,
         );
 
-        if (['add', 'play'].indexOf(commandBuilder.name) >= 0) {
+        if (['add', 'play', 'list'].indexOf(commandBuilder.name) >= 0) {
           const playlists = await this.playlistRepository.find({
             guildId: guild.id,
           });

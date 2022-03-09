@@ -1,6 +1,6 @@
 import { YoutubeURL } from '@utils/youtube';
 import { Collection } from 'discord.js';
-import { VoiceWorker } from '@/features/bot/voice/voiceWorker';
+import { Voice } from '@/features/bot/voice/voice';
 
 export type BaseVoiceMessage<T extends string = string> = {
   type: T;
@@ -19,4 +19,4 @@ export type GuildId = string;
 
 export type WorkerId = string;
 
-export type GuildCollection = Collection<WorkerId, VoiceWorker>;
+export type GuildCollection = Collection<WorkerId, Voice>;

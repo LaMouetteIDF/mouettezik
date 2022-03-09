@@ -12,6 +12,7 @@ import { UserOAuth2 } from '@/infra/entities/userOAuth2.entity';
 
 import {
   CmdToAddPlayerOptions,
+  CmdToListPlayerOptions,
   CmdToPausePlayerOptions,
   CmdToPlayPlayerOptions,
   CmdToStopPlayerOptions,
@@ -31,6 +32,7 @@ export class CoreService implements OnModuleInit {
 
   async onModuleInit() {
     const workersDB = await this.workersRepository.find();
+    if (!workersDB.length) return;
 
     const workers = await Promise.all(
       workersDB.map(async ({ type, accessToken: token }) =>
@@ -74,6 +76,11 @@ export class CoreService implements OnModuleInit {
         break;
       case 'add':
         await this.playerService.add(CmdToAddPlayerOptions(commandInteraction));
+        break;
+      case 'list':
+        await this.playerService.list(
+          CmdToListPlayerOptions(commandInteraction),
+        );
         break;
       case 'stop':
         await this.playerService.stop(

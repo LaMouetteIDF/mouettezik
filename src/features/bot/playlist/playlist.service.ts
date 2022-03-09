@@ -4,18 +4,12 @@ import { Repository } from 'typeorm';
 import { PlaylistEntity } from '@/infra/entities/playlist.entity';
 import { TrackEntity } from '@/infra/entities/track.entity';
 import { Collection } from 'discord.js';
-import { ChannelState } from '@/features/bot/playlist/playlist.types';
 import { VoiceChannelEntity } from '@/infra/entities/voiceChannel.entity';
 import { generateSnowFlakeId } from '@utils/snowflackid';
 import Youtube from '@utils/youtube';
 
 @Injectable()
 export class PlaylistService {
-  private readonly _guildChannels = new Collection<
-    string,
-    Collection<string, ChannelState>
-  >();
-
   private readonly _playlists = new Collection<string, PlaylistEntity>();
   private readonly _tracks = new Collection<string, TrackEntity>();
 
@@ -113,12 +107,12 @@ export class PlaylistService {
     return await this._addTrack(track);
   }
 
-  public async addTrackByURL(playlistId: string, youtubeURL: string) {
-    const musicInfo = await Youtube.getInfo(youtubeURL);
+  public async addTrackByURL(playlistId: string, url: string) {
+    const musicInfo = await Youtube.getInfo(url);
     const track = this.trackRepository.create({
       playlistId: playlistId,
       duration: parseInt(musicInfo.duration, 10),
-      url: youtubeURL,
+      url,
       isAvailable: true,
       title: musicInfo.title,
       thumbnails: musicInfo.thumbnails,
@@ -129,6 +123,35 @@ export class PlaylistService {
 
   public async getTrack(trackId: string) {
     return this._getTrack(trackId);
+  }
+
+  public async getPlaylistAndTracks(playlistId: string) {
+    const playlist = await this._getPlaylist(playlistId);
+    if (!playlist) throw new Error('no playlist found');
+    const tracks = await Promise.all(
+      playlist.tracksOrder.map((trackId) => this._getTrack(trackId)),
+    );
+
+    return {
+      playlist,
+      tracks,
+    };
+  }
+
+  public async newTrackFromUrl(url: string) {
+    const musicInfo = await Youtube.getInfo(url);
+    return this.trackRepository.create({
+      duration: parseInt(musicInfo.duration, 10),
+      url,
+      isAvailable: true,
+      title: musicInfo.title,
+      thumbnails: musicInfo.thumbnails,
+    });
+  }
+
+  public async getDirectUrl(track: TrackEntity): Promise<string> {
+    const info = await Youtube.getInfo(track.url);
+    return info.url;
   }
 
   public async getIndexOfTrackInPlaylist(trackId: string) {
@@ -143,89 +166,5 @@ export class PlaylistService {
     const playlist = await this._getPlaylist(playlistId);
     if (!playlist) throw new Error('no playlist found');
     return playlist.ephemeral;
-  }
-
-  ////////////////////////////////////
-
-  private findOrNewGuild(guildId: string) {
-    let guildChannel = this._guildChannels.get(guildId);
-
-    if (!guildChannel) {
-      guildChannel = new Collection<string, ChannelState>();
-      this._guildChannels.set(guildId, guildChannel);
-    }
-
-    return guildChannel;
-  }
-
-  private async findOrNewVoiceChannelEntity(
-    guildId: string,
-    channelId: string,
-  ) {
-    let channel = await this.voiceChannelRepository.findOne(channelId);
-
-    if (!channel) {
-      channel = this.voiceChannelRepository.create({ id: channelId, guildId });
-      channel = await this.voiceChannelRepository.save(channel);
-    }
-
-    return channel;
-  }
-
-  public async setCurrentPlaylistChannel(
-    guildId: string,
-    channelId: string,
-    playlistId: string,
-    opts?: { position?: number },
-  ) {
-    const playlist = await this.playlistRepository.findOne(playlistId);
-    if (!playlist) throw new Error('playlist is not found');
-
-    if (opts.position) {
-      if (playlist.tracksOrder.length < opts.position)
-        throw new Error('invalid track');
-    }
-
-    const channelState: ChannelState = {
-      channelId,
-      playlist,
-      tracks: new Collection<string, TrackEntity>(),
-    };
-
-    if (opts.position) {
-      channelState.currentTrack = playlist.tracksOrder[opts.position - 1];
-    }
-
-    const guild = this.findOrNewGuild(guildId);
-
-    guild.set(guildId, channelState);
-
-    return playlist;
-  }
-
-  public async getGuildPlaylists(guildId: string) {
-    return this.playlistRepository.find({ guildId });
-  }
-
-  public async getOrMakeDefault(guildId: string, playlistId?: string) {
-    if (playlistId) {
-      const playlist = await this.playlistRepository.findOne(playlistId);
-      if (playlist) return playlist;
-    }
-
-    const playlists = await this.playlistRepository.find({
-      guildId,
-    });
-
-    if (playlists.length <= 0) {
-      const playlist = this.playlistRepository.create({
-        guildId,
-        name: 'Default',
-        tracksOrder: [],
-      });
-      return await this.playlistRepository.save(playlist);
-    } else {
-      throw new Error('playlist is not found');
-    }
   }
 }

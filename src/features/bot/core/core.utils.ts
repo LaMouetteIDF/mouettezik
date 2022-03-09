@@ -2,9 +2,9 @@ import { CommandInteraction } from 'discord.js';
 
 import {
   AddPlayerOptions,
+  ListPlayerOptions,
   PausePlayerOptions,
   PlayPlayerOptions,
-  ResumePlayerOptions,
   StopPlayerOptions,
 } from '../player/player.types';
 
@@ -46,6 +46,21 @@ export function CmdToAddPlayerOptions(
     userId: interaction.user.id,
     options: {
       youtubeURL: interaction.options.getString('youtube_url', true),
+      playlist: interaction.options.getString('playlist', false),
+    },
+    ctx: {
+      interaction,
+    },
+  };
+}
+
+export function CmdToListPlayerOptions(
+  interaction: CommandInteraction,
+): ListPlayerOptions {
+  return {
+    guildId: interaction.guildId,
+    userId: interaction.user.id,
+    options: {
       playlist: interaction.options.getString('playlist', false),
     },
     ctx: {

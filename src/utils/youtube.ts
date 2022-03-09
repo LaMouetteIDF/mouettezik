@@ -1,4 +1,5 @@
 import * as YT from 'ytdl-core';
+import { log } from 'util';
 
 export interface YTParseURL {
   url: string;
@@ -38,12 +39,15 @@ export default class Youtube {
   }
 
   public static async getInfo(url: YoutubeURL) {
-    const info = await YT.getBasicInfo(url);
+    const info = await YT.getInfo(url);
+    const format = Youtube._getAudioFormat(info);
+    console.log(format);
     return {
       id: info.videoDetails.videoId,
       title: info.videoDetails.title,
       duration: info.videoDetails.lengthSeconds,
       thumbnails: info.videoDetails.thumbnails,
+      url: format.url,
     };
   }
 

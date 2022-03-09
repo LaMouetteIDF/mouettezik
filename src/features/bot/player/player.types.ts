@@ -26,9 +26,12 @@ export type AddPlayerOptions = BaseBotParams & {
   };
 };
 
-export type ResumePlayerOptions = BaseBotParams & {
+export type ListPlayerOptions = BaseBotParams & {
   userId: string;
   guildId: string;
+  options: {
+    playlist?: string;
+  };
 };
 
 export type StopPlayerOptions = BaseBotParams & {

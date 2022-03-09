@@ -1,12 +1,12 @@
 import { Injectable } from '@nestjs/common';
 import {
   AddPlayerOptions,
+  ListPlayerOptions,
   PlayPlayerOptions,
   StopPlayerOptions,
 } from './player.types';
 import { MessagesService } from '../messages/messages.service';
 import { WorkerService } from '../worker/worker.service';
-import { PlayerGuild } from './playerGuild';
 import { VoiceService } from '../voice/voice.service';
 import { Guild } from 'discord.js';
 import Youtube from '@/utils/youtube';
@@ -23,15 +23,12 @@ async function getChannelIdOfUser(
   userId: string,
 ): Promise<string> {
   const guildMember = await guild.members.fetch(userId);
-  const channelId = guildMember.voice.channelId;
-  if (!channelId) throw new Error('user is not connect in voice channel');
-  return channelId;
+  // if (!channelId) throw new Error('user is not connect in voice channel');
+  return guildMember.voice.channelId;
 }
 
 @Injectable()
 export class PlayerService {
-  private _players = new Map<string, PlayerGuild>();
-
   constructor(
     @InjectRepository(PlaylistEntity)
     private readonly playlistRepository: Repository<PlaylistEntity>,
@@ -58,6 +55,17 @@ export class PlayerService {
         await this.workerService.getGuildMainWorker(opts.guildId),
         opts.userId,
       );
+
+      if (!channelId)
+        return this.sendError(new Error('user not in voice channel'), opts.ctx);
+
+      if (params.youtubeURL) {
+        const track = await this.playlistService.newTrackFromUrl(
+          params.youtubeURL,
+        );
+        await this.voiceService.playTrack(guildId, channelId, track);
+        return await this.replyMessage(`Play...! ${track.title}`, opts.ctx);
+      }
 
       switch (true) {
         case !!params.track && !params.playlist && !params.youtubeURL: {
@@ -153,51 +161,76 @@ export class PlayerService {
     if (!Youtube.isValid(opts.options.youtubeURL))
       return this.sendError(new Error('invalid url'), opts.ctx);
 
-    if (!opts.options.playlist) {
-      try {
-        const channelId = await getChannelIdOfUser(
+    try {
+      const guildId = opts.guildId;
+      const params = Object.assign({}, opts.options);
+
+      if (!params.playlist) {
+        const userChannelId = await getChannelIdOfUser(
           await this.workerService.getGuildMainWorker(opts.guildId),
           opts.userId,
         );
-        const playlistState =
-          this.voiceService.getCurrentPlaylistInVoiceChannel(
-            opts.guildId,
-            channelId,
-          );
-        if (playlistState && !opts.options.playlist) {
-          opts.options.playlist = playlistState.playlist;
-        }
-      } catch (e) {
-        return this.sendError(new Error('no current playlist'), opts.ctx);
-      }
-    }
 
-    try {
-      const playlist = await this.playlistService.getPlaylist(
-        opts.options.playlist,
-      );
+        if (!userChannelId) {
+          return this.sendError(
+            new Error('user not in voice channel'),
+            opts.ctx,
+          );
+        }
+
+        const track = await this.playlistService.newTrackFromUrl(
+          params.youtubeURL,
+        );
+        await this.voiceService.addInQueue(guildId, userChannelId, track);
+        return;
+      }
+
+      const playlist = await this.playlistService.getPlaylist(params.playlist);
 
       if (!playlist)
         return this.sendError(new Error('invalid playlist'), opts.ctx);
 
-      const musicInfo = await Youtube.getInfo(opts.options.youtubeURL);
-
-      const track = this.trackRepository.create({
-        playlistId: playlist.id,
-        duration: parseInt(musicInfo.duration, 10),
-        url: opts.options.youtubeURL,
-        isAvailable: true,
-        title: musicInfo.title,
-        thumbnails: musicInfo.thumbnails,
-      });
-
-      await this.playlistService.addTrack(track);
+      const track = await this.playlistService.addTrackByURL(
+        params.playlist,
+        params.youtubeURL,
+      );
 
       return await this.replyMessage(
         `Add music "${track.title}" in "${playlist.name}" playlist`,
         opts.ctx,
-        5_000,
       );
+    } catch (e) {
+      console.error(e);
+      return this.sendError(e, opts.ctx);
+    }
+  }
+
+  public async list(opts: ListPlayerOptions) {
+    const params = Object.assign({}, opts.options);
+    try {
+      const userChannelId = await getChannelIdOfUser(
+        await this.workerService.getGuildMainWorker(opts.guildId),
+        opts.userId,
+      );
+
+      if (!userChannelId && !params.playlist)
+        return this.sendError(new Error('no current playlist'), opts.ctx);
+
+      if (!params.playlist) {
+        const currentPlaylistState =
+          this.voiceService.getCurrentPlaylistInVoiceChannel(
+            opts.guildId,
+            userChannelId,
+          );
+        if (!currentPlaylistState)
+          return this.sendError(new Error('no current playlist'), opts.ctx);
+        params.playlist = currentPlaylistState.playlist;
+      }
+
+      const list = await this.playlistService.getPlaylistAndTracks(
+        params.playlist,
+      );
+      return this.replyMessage(this._makeReplyPlaylist(list), opts.ctx);
     } catch (e) {
       console.error(e);
       return this.sendError(e, opts.ctx);
@@ -212,7 +245,7 @@ export class PlayerService {
       );
 
       if (!userChannelId)
-        return this.sendError(new Error('not authorized'), opts.ctx);
+        return this.sendError(new Error('Join voice channel!'), opts.ctx);
 
       this.voiceService.stop(opts.guildId, userChannelId);
 
@@ -221,10 +254,6 @@ export class PlayerService {
       console.error(e);
       return this.sendError(e, opts.ctx);
     }
-  }
-
-  private async _findOrMakePlayer(guildId: string) {
-    return this._players.get(guildId) ?? (await this.addPlayerGuild(guildId));
   }
 
   private async sendError(
@@ -253,15 +282,18 @@ export class PlayerService {
     });
   }
 
-  private async addPlayerGuild(guildId: string) {
-    const workers = await this.workerService.getWorkersInGuildId(guildId);
+  private _makeReplyPlaylist(playlist: {
+    playlist: PlaylistEntity;
+    tracks: TrackEntity[];
+  }) {
+    const render = [' ', `PLAYLIST: ${playlist.playlist.name}`];
 
-    const guildPlayer = new PlayerGuild(
-      guildId,
-      workers.map((worker) => worker.id),
-    );
-
-    this._players.set(guildId, guildPlayer);
-    return guildPlayer;
+    const tracks = playlist.playlist.tracksOrder.map((trackId, index) => {
+      const track = playlist.tracks.find((track) => track.id === trackId);
+      if (!track) return undefined;
+      return `${index + 1} - ${track.title}`;
+    });
+    render.push(...tracks.filter((track) => !!track));
+    return render.join('\n');
   }
 }

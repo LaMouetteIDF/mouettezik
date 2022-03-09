@@ -1,14 +1,15 @@
 import { Injectable } from '@nestjs/common';
 import { WorkerService } from '../worker/worker.service';
 import { Collection } from 'discord.js';
-import { VoiceState, VoiceWorker } from '@/features/bot/voice/voiceWorker';
+import { Voice, VoiceStatus } from '@/features/bot/voice/voice';
 import { PlaylistService } from '@/features/bot/playlist/playlist.service';
+import { TrackEntity } from '@/infra/entities/track.entity';
 
 type GuildId = string;
 
 type WorkerId = string;
 
-type GuildCollection = Collection<WorkerId, VoiceWorker>;
+type GuildCollection = Collection<WorkerId, Voice>;
 
 @Injectable()
 export class VoiceService {
@@ -34,7 +35,7 @@ export class VoiceService {
   private getGuild(guildId: string) {
     let guild = this._guilds.get(guildId);
     if (!guild) {
-      guild = new Collection<WorkerId, VoiceWorker>();
+      guild = new Collection<WorkerId, Voice>();
       this._guilds.set(guildId, guild);
     }
     return guild;
@@ -46,7 +47,7 @@ export class VoiceService {
       const availableWorkerId = this.getAvailableWorkerId(guildId);
       if (!availableWorkerId) throw new Error('no worker available');
       const worker = this.workerService.getWorkerById(availableWorkerId);
-      voiceWorker = await new VoiceWorker(
+      voiceWorker = await new Voice(
         guildId,
         channelId,
         worker,
@@ -67,9 +68,19 @@ export class VoiceService {
   ): Promise<void> {
     const voiceWorker = await this.currentOrNewVoiceWorker(guildId, channelId);
     if (playlistId) await voiceWorker.setPlaylist(playlistId, track);
-    if (!playlistId && voiceWorker.state == VoiceState.Idle)
+    if (!playlistId && voiceWorker.state.status == VoiceStatus.Idle)
       throw new Error('missing playlist');
     await voiceWorker.play();
+  }
+
+  public async playTrack(
+    guildId: string,
+    channelId: string,
+    track: TrackEntity,
+  ): Promise<void> {
+    const voiceWorker = await this.currentOrNewVoiceWorker(guildId, channelId);
+
+    await voiceWorker.playTrack(track);
   }
 
   public pause(guildId: string, channelId: string): boolean {
@@ -82,10 +93,22 @@ export class VoiceService {
     return voiceWorker ? voiceWorker.stop() : false;
   }
 
+  public async addInQueue(
+    guildId: string,
+    channelId: string,
+    tracks: TrackEntity | TrackEntity[],
+  ) {
+    const voiceWorker = await this.currentOrNewVoiceWorker(guildId, channelId);
+    if (Array.isArray(tracks)) tracks.forEach(voiceWorker.addInQueue);
+    else voiceWorker.addInQueue(tracks);
+    if (voiceWorker.state.status === VoiceStatus.Idle)
+      return voiceWorker.play();
+  }
+
   public getVoiceWorkerByChannel(
     guildId: string,
     channelId: string,
-  ): VoiceWorker | undefined {
+  ): Voice | undefined {
     if (!this._guilds.has(guildId)) return undefined;
     const guild = this.getGuild(guildId);
     return guild.find((voiceWorker) => voiceWorker.channelId === channelId);
