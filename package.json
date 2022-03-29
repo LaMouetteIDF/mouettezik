@@ -33,7 +33,7 @@
     "@nestjs/serve-static": "^2.2.2",
     "@nestjs/typeorm": "^8.0.3",
     "axios": "^0.26.0",
-    "discord-api-types": "^0.27.3",
+    "discord-api-types": "^0.28.0",
     "discord.js": "^13.6.0",
     "hbs": "^4.2.0",
     "reflect-metadata": "^0.1.13",
