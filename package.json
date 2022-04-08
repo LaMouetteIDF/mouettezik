@@ -27,7 +27,7 @@
     "@discordjs/voice": "^0.8.0",
     "@nestjs/axios": "^0.0.6",
     "@nestjs/common": "^8.0.0",
-    "@nestjs/config": "^1.2.0",
+    "@nestjs/config": "^1.2.1",
     "@nestjs/core": "^8.0.0",
     "@nestjs/platform-express": "^8.0.0",
     "@nestjs/serve-static": "^2.2.2",
