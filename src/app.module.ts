@@ -1,22 +1,14 @@
 import { Module } from '@nestjs/common';
-import { AppController } from './app.controller';
-import { AppService } from './app.service';
-import { BotModule } from './features/bot/bot.module';
-import { TypeOrmModule } from '@nestjs/typeorm';
-import { ServeStaticModule } from '@nestjs/serve-static';
-import { join } from 'path';
-import { AuthModule } from './features/auth/auth.module';
+import { ConfigModule } from '@nestjs/config';
+
+import { CommonModule } from 'common/common.module';
+import { PlayersModule } from './features/players/players.module';
 
 @Module({
   imports: [
-    ServeStaticModule.forRoot({
-      rootPath: join(__dirname, '..', 'web'),
-    }),
-    TypeOrmModule.forRoot(),
-    BotModule,
-    AuthModule,
+    ConfigModule.forRoot({ isGlobal: true }),
+    CommonModule,
+    PlayersModule,
   ],
-  controllers: [AppController],
-  providers: [AppService],
 })
 export class AppModule {}

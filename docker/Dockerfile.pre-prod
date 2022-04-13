@@ -1,18 +1,21 @@
 FROM node:16
 
 RUN apt update
-RUN apt install -y python3 ffmpeg libtool-bin make htop git
+RUN apt install -y python3 ffmpeg libtool-bin make htop
 RUN wget https://yt-dl.org/downloads/latest/youtube-dl -O /usr/local/bin/youtube-dl && chmod a+rx /usr/local/bin/youtube-dl
 RUN ln -sf python3 /usr/bin/python
 RUN yarn global add node-gyp
 
-WORKDIR /bashtop
-RUN git clone https://github.com/aristocratos/bashtop.git .
-RUN make install
-
-
 WORKDIR /app
 
-VOLUME /data
+COPY ./package.json ./
+COPY ./yarn.lock ./
+
+ENV YOUTUBE_DL_SKIP_DOWNLOAD=true
+RUN yarn
+COPY . .
+RUN yarn build
 
 ENTRYPOINT ["/bin/sh"]
+
+CMD ["-c", "node dist/main"]

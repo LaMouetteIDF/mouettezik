@@ -9,7 +9,7 @@
     "target": "es2017",
     "sourceMap": true,
     "outDir": "./dist",
-    "baseUrl": "./",
+    "baseUrl": "./src",
     "incremental": true,
     "skipLibCheck": true,
     "strictNullChecks": false,
@@ -18,12 +18,22 @@
     "forceConsistentCasingInFileNames": false,
     "noFallthroughCasesInSwitch": false,
     "esModuleInterop": true,
+    "lib": ["ES2021"],
     "paths": {
-      "@/*": [
-        "./src/*"
+      "common/*": [
+        "./common/*"
       ],
-      "@utils/*": [
-        "./src/utils/*"
+      "core/*": [
+        "./core/*"
+      ],
+      "infrastructure/*": [
+        "./infrastructure/*"
+      ],
+      "utils/*": [
+        "./utils/*"
+      ],
+      "@util/*": [
+        "./util/*"
       ]
     }
   }
