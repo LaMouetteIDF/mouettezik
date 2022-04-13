@@ -42,7 +42,7 @@
     "snowflake-id": "^1.1.0",
     "sodium": "^3.0.2",
     "sqlite3": "^5.0.2",
-    "typeorm": "^0.2.44",
+    "typeorm": "^0.3.2",
     "ytdl-core": "^4.11.0",
     "ytpl": "^2.2.3"
   },
