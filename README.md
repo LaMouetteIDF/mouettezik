@@ -5,7 +5,7 @@
 ### Highlights
 
 - Simple & easy to use 😁
-- Support YouTube, SoundCloud and other 👌
+- Support YouTube, SoundCloud and [other...](https://ytdl-org.github.io/youtube-dl/supportedsites.html) 👌
 - Play in several channels at the same time on the same server 🎵
 - Slash Commands support 🤖
 - Embed view to control the player with buttons 🎛️
